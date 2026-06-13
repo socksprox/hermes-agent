@@ -68,20 +68,20 @@ function useMgmtGateway(enabled: boolean) {
   return gw;
 }
 
-function useGlobalPaletteShortcut(isActive: boolean, open: () => void) {
+function useGlobalPaletteShortcut(isActive: boolean, toggle: () => void) {
   useEffect(() => {
     if (!isActive) return;
 
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        open();
+        toggle();
       }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isActive, open]);
+  }, [isActive, toggle]);
 }
 
 function RichSessionProvider({
@@ -135,6 +135,7 @@ function RichSessionProvider({
   const contextValue: ChatSessionContextValue = {
     gw: gateway.gw,
     sessionId: gateway.sessionId,
+    sessionIdRef: gateway.sessionIdRef,
     storedSessionId: gateway.storedSessionId,
     resumeSessionId,
     sessionInfo: gateway.sessionInfo,
@@ -262,7 +263,11 @@ export function DashboardChatSessionProvider({ isActive, children }: Props) {
     setPaletteOpen(open);
   }, []);
 
-  useGlobalPaletteShortcut(isActive, () => setPaletteOpen(true));
+  const togglePalette = useCallback(() => {
+    setPaletteOpen((open) => !open);
+  }, []);
+
+  useGlobalPaletteShortcut(isActive, togglePalette);
 
   if (!surface) {
     return (

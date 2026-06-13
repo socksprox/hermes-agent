@@ -1,5 +1,10 @@
 import type { GatewayClient, ConnectionState } from "@/lib/gatewayClient";
-import { createContext, useContext, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  type MutableRefObject,
+  type ReactNode,
+} from "react";
 
 import type { ChatMessage } from "./chatMessages";
 import type { SessionInfo } from "./useMessageStream";
@@ -8,6 +13,8 @@ import type { UseSessionListResult } from "./useSessionListTypes";
 export interface ChatSessionContextValue {
   gw: GatewayClient | null;
   sessionId: string | null;
+  /** Runtime session id — updated synchronously before transcript hydration. */
+  sessionIdRef?: MutableRefObject<string | null>;
   storedSessionId: string | null;
   resumeSessionId: string | null;
   sessionInfo: SessionInfo;

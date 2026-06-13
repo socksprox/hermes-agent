@@ -1,5 +1,5 @@
 import type { GatewayClient, GatewayEvent } from "@/lib/gatewayClient";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 
 import {
   STREAM_DELTA_FLUSH_MS,
@@ -25,12 +25,15 @@ export interface SessionInfo {
 interface UseMessageStreamOptions {
   gw: GatewayClient | null;
   sessionId: string | null;
+  /** When set, used for event routing before React commits sessionId. */
+  sessionIdRef?: MutableRefObject<string | null>;
   initialMessages?: ChatMessage[];
 }
 
 export function useMessageStream({
   gw,
   sessionId,
+  sessionIdRef,
   initialMessages = [],
 }: UseMessageStreamOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -41,16 +44,24 @@ export function useMessageStream({
   const activeAssistantIdRef = useRef<string | null>(null);
   const deltaQueueRef = useRef({ assistant: "", reasoning: "" });
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localSessionIdRef = useRef(sessionId);
+  localSessionIdRef.current = sessionId;
+
+  const activeSessionId = () =>
+    sessionIdRef?.current ?? localSessionIdRef.current;
 
   const flushDeltas = useCallback(() => {
     const { assistant, reasoning } = deltaQueueRef.current;
     if (!assistant && !reasoning) return;
 
-    deltaQueueRef.current = { assistant: "", reasoning: "" };
+    const id = activeAssistantIdRef.current;
+    if (!id) return;
 
     setMessages((prev) => {
-      const id = activeAssistantIdRef.current;
-      if (!id) return prev;
+      const target = prev.find((m) => m.id === id);
+      if (!target) return prev;
+
+      deltaQueueRef.current = { assistant: "", reasoning: "" };
 
       return prev.map((m) => {
         if (m.id !== id) return m;
@@ -87,7 +98,8 @@ export function useMessageStream({
 
   const handleEvent = useCallback(
     (ev: GatewayEvent) => {
-      if (sessionId && ev.session_id && ev.session_id !== sessionId) return;
+      const sid = activeSessionId();
+      if (sid && ev.session_id && ev.session_id !== sid) return;
 
       const payload = (ev.payload ?? {}) as GatewayEventPayload;
 
@@ -296,6 +308,7 @@ export function useMessageStream({
     },
     [
       sessionId,
+      sessionIdRef,
       ensureAssistantBubble,
       scheduleFlush,
       flushDeltas,
@@ -337,16 +350,39 @@ export function useMessageStream({
   }, []);
 
   const resetMessages = useCallback((next: ChatMessage[]) => {
-    activeAssistantIdRef.current = null;
+    const pendingAssistant = deltaQueueRef.current.assistant;
+    const pendingReasoning = deltaQueueRef.current.reasoning;
     deltaQueueRef.current = { assistant: "", reasoning: "" };
+    activeAssistantIdRef.current = null;
 
-    const last = next.at(-1);
-    if (last?.role === "assistant" && last.streaming) {
-      activeAssistantIdRef.current = last.id;
+    let hydrated = next;
+    const last = hydrated.at(-1);
+    if (
+      last?.role === "assistant" &&
+      last.streaming &&
+      (pendingAssistant || pendingReasoning)
+    ) {
+      hydrated = [
+        ...hydrated.slice(0, -1),
+        {
+          ...last,
+          content: pendingAssistant
+            ? appendTextDelta(last.content, pendingAssistant)
+            : last.content,
+          reasoning: pendingReasoning
+            ? appendReasoningDelta(last.reasoning, pendingReasoning)
+            : last.reasoning,
+        },
+      ];
+    }
+
+    const tail = hydrated.at(-1);
+    if (tail?.role === "assistant" && tail.streaming) {
+      activeAssistantIdRef.current = tail.id;
       setSessionInfo((prev) => ({ ...prev, running: true }));
     }
 
-    setMessages(next);
+    setMessages(hydrated);
   }, []);
 
   const clearOverlay = useCallback(() => setOverlay(null), []);

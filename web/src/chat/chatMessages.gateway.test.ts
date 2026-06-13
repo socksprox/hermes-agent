@@ -60,4 +60,27 @@ describe("appendInflightToMessages", () => {
     expect(out).toHaveLength(2);
     expect(out[1]?.role).toBe("assistant");
   });
+
+  it("merges inflight assistant into trailing streaming bubble", () => {
+    const base = [
+      { id: "u1", role: "user" as const, content: "go" },
+      {
+        id: "a1",
+        role: "assistant" as const,
+        content: "",
+        streaming: true,
+      },
+    ];
+    const out = appendInflightToMessages(base, {
+      user: "go",
+      assistant: "partial",
+      streaming: true,
+    });
+    expect(out).toHaveLength(2);
+    expect(out[1]).toMatchObject({
+      id: "a1",
+      content: "partial",
+      streaming: true,
+    });
+  });
 });

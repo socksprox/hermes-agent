@@ -88,6 +88,11 @@ export function useChatGateway({
   const urlPersistedRef = useRef(false);
   /** Set before URL ?resume= sync so the gateway effect skips teardown/rebind. */
   const persistUrlSyncRef = useRef(false);
+  /**
+   * Set by startNewChat while ?resume= is being cleared. The session-bind
+   * effect must not re-resume the old id if the gateway client resets first.
+   */
+  const suppressResumeBindRef = useRef(false);
   const resumeParamRef = useRef(resumeParam);
   const onHydratedRef = useRef(onHydrated);
   const onSessionInfoRef = useRef(onSessionInfo);
@@ -179,6 +184,13 @@ export function useChatGateway({
             resumePromise,
           ]);
 
+          const runtimeId = resumed.session_id;
+          const stored = resumed.stored_session_id ?? resumed.resumed ?? targetId;
+          storedIdRef.current = stored;
+          sessionIdRef.current = runtimeId;
+          setStoredSessionId(stored);
+          setSessionId(runtimeId);
+
           const restMessages = prefetchResult?.messages?.length
             ? toChatMessagesFromRest(prefetchResult.messages)
             : null;
@@ -189,13 +201,6 @@ export function useChatGateway({
               resumed.inflight,
             ),
           );
-
-          const runtimeId = resumed.session_id;
-          const stored = resumed.stored_session_id ?? resumed.resumed ?? targetId;
-          storedIdRef.current = stored;
-          sessionIdRef.current = runtimeId;
-          setStoredSessionId(stored);
-          setSessionId(runtimeId);
 
           if (resumed.info) {
             setSessionInfo(resumed.info);
@@ -303,6 +308,16 @@ export function useChatGateway({
 
   // Session bind — URL deep-links and cold resumes; must not close the socket.
   useEffect(() => {
+    if (suppressResumeBindRef.current) {
+      if (resumeParam) {
+        // Gateway/version may update before ?resume= clears; do not re-bind yet.
+        return;
+      }
+      suppressResumeBindRef.current = false;
+      void bindSession(null, { resume: false });
+      return;
+    }
+
     const alreadyOnThisSession =
       !!resumeParam &&
       storedIdRef.current === resumeParam &&
@@ -408,6 +423,7 @@ export function useChatGateway({
   );
 
   const startNewChat = useCallback(() => {
+    suppressResumeBindRef.current = true;
     wantReconnectRef.current = false;
     clearReconnectTimer();
     bootingRef.current = false;
@@ -415,6 +431,7 @@ export function useChatGateway({
     persistUrlSyncRef.current = false;
     storedIdRef.current = null;
     sessionIdRef.current = null;
+    resumeParamRef.current = null;
     reconnectAttemptRef.current = 0;
     setSessionId(null);
     setStoredSessionId(null);
@@ -437,6 +454,7 @@ export function useChatGateway({
     gw,
     connectionState,
     sessionId,
+    sessionIdRef,
     storedSessionId,
     sessionInfo,
     error,

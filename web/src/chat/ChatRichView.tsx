@@ -23,6 +23,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     gw,
     connectionState,
     sessionId,
+    sessionIdRef,
     sessionInfo: gatewayInfo,
     error: gatewayError,
     sessionEnded,
@@ -48,7 +49,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     addSystemMessage,
     resetMessages,
     clearOverlay,
-  } = useMessageStream({ gw, sessionId });
+  } = useMessageStream({ gw, sessionId, sessionIdRef });
 
   resetRef.current = resetMessages;
 

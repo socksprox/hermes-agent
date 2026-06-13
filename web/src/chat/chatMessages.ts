@@ -295,7 +295,16 @@ export function appendInflightToMessages(
   }
   const assistantMsg = inflightAssistantMessage(inflight);
   if (assistantMsg) {
-    next.push(assistantMsg);
+    const last = next.at(-1);
+    if (last?.role === "assistant" && (last.streaming || assistantMsg.streaming)) {
+      next[next.length - 1] = {
+        ...last,
+        content: assistantMsg.content || last.content,
+        streaming: assistantMsg.streaming ?? last.streaming,
+      };
+    } else {
+      next.push(assistantMsg);
+    }
   }
   return next;
 }

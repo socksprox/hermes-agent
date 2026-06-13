@@ -1,5 +1,4 @@
 import { api } from "@/lib/api";
-import { Button } from "@nous-research/ui/ui/components/button";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
@@ -157,12 +156,6 @@ export function SessionCommandPalette({ open, onClose }: Props) {
                 )}
               </button>
             ))}
-        </div>
-
-        <div className="flex justify-end border-t border-border/20 px-4 py-2">
-          <Button ghost size="sm" onClick={onClose}>
-            {t.common.close}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
