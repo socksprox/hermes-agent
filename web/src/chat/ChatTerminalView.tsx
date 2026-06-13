@@ -861,7 +861,7 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
             className="hermes-chat-xterm-host min-h-0 min-w-0 flex-1"
           />
 
-          {narrow && (
+          {isActive && narrow && (
             <Button
               ghost
               onClick={() => setMobilePanelOpenRaw(true)}
