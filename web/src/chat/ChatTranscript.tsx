@@ -133,9 +133,10 @@ export function ChatTranscript({
                     <ToolCall key={tool.id} tool={tool} />
                   ))}
                   {msg.content && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <Markdown>{msg.content}</Markdown>
-                    </div>
+                    <Markdown
+                      content={msg.content}
+                      streaming={msg.streaming}
+                    />
                   )}
                   {msg.streaming && !msg.content && (
                     <span className="text-text-tertiary animate-pulse">…</span>

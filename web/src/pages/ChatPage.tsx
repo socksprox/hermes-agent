@@ -17,7 +17,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
       .getConfig()
       .then((cfg) => {
         if (cancelled) return;
-        const raw = cfg?.display?.dashboard_chat_surface;
+        const raw = (cfg.display as { dashboard_chat_surface?: string } | undefined)
+          ?.dashboard_chat_surface;
         setSurface(raw === "terminal" ? "terminal" : "rich");
       })
       .catch(() => {

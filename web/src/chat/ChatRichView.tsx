@@ -201,7 +201,7 @@ export function ChatRichView({ isActive = true }: { isActive?: boolean }) {
         <div className="flex flex-wrap items-center gap-2 border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
           <span>{gatewayError ?? "Session ended"}</span>
           {sessionEnded && (
-            <Button size="sm" variant="secondary" onClick={startNewChat}>
+            <Button size="sm" outlined onClick={startNewChat}>
               New chat
             </Button>
           )}

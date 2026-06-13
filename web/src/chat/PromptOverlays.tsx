@@ -65,7 +65,7 @@ export function PromptOverlays({
               </Button>
               <Button
                 size="sm"
-                variant="secondary"
+                outlined
                 disabled={busy || !sessionId}
                 onClick={() =>
                   void respond("approval.respond", {
@@ -79,7 +79,7 @@ export function PromptOverlays({
               {overlay.allowPermanent !== false && (
                 <Button
                   size="sm"
-                  variant="secondary"
+                  outlined
                   disabled={busy || !sessionId}
                   onClick={() =>
                     void respond("approval.respond", {
@@ -93,7 +93,7 @@ export function PromptOverlays({
               )}
               <Button
                 size="sm"
-                variant="destructive"
+                destructive
                 disabled={busy || !sessionId}
                 onClick={() =>
                   void respond("approval.respond", {

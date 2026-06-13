@@ -65,6 +65,7 @@ export interface GatewayEventPayload {
   prompt?: string;
   model?: string;
   provider?: string;
+  cwd?: string;
   running?: boolean;
 }
 

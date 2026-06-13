@@ -132,7 +132,7 @@ export function ChatComposer({
             <Button
               type="button"
               size="icon"
-              variant="destructive"
+              destructive
               onClick={() => void handleStop()}
               disabled={!sessionId}
               aria-label="Stop"
