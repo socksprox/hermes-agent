@@ -1,9 +1,9 @@
-import { api, type SessionMessage } from "@/lib/api";
+import { api } from "@/lib/api";
 import { GatewayClient, type ConnectionState } from "@/lib/gatewayClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { toChatMessagesFromRest, type ChatMessage } from "./chatMessages";
+import { toChatMessagesFromGateway, toChatMessagesFromRest, type ChatMessage } from "./chatMessages";
 import type { SessionInfo } from "./useMessageStream";
 
 interface SessionResumeResponse {
@@ -165,9 +165,7 @@ export function useChatGateway({
             Array.isArray(resumed.messages) &&
             resumed.messages.length > 0
           ) {
-            onHydratedRef.current?.(
-              toChatMessagesFromRest(resumed.messages as SessionMessage[]),
-            );
+            onHydratedRef.current?.(toChatMessagesFromGateway(resumed.messages));
           }
 
           const runtimeId = resumed.session_id;
@@ -311,6 +309,7 @@ export function useChatGateway({
   const activateLiveSession = useCallback(
     async (runtimeId: string) => {
       if (bootingRef.current) return;
+      bootingRef.current = true;
       setError(null);
       setSessionEnded(false);
 
@@ -342,19 +341,30 @@ export function useChatGateway({
         setSessionInfo(info);
         onSessionInfoRef.current?.(info);
 
-        if (Array.isArray(activated.messages) && activated.messages.length > 0) {
-          onHydratedRef.current?.(
-            toChatMessagesFromRest(activated.messages as SessionMessage[]),
-          );
+        const prefetch = await api
+          .getSessionMessages(stored, profile)
+          .catch(() => null);
+
+        if (prefetch?.messages?.length) {
+          onHydratedRef.current?.(toChatMessagesFromRest(prefetch.messages));
+        } else if (
+          Array.isArray(activated.messages) &&
+          activated.messages.length > 0
+        ) {
+          onHydratedRef.current?.(toChatMessagesFromGateway(activated.messages));
+        } else {
+          onHydratedRef.current?.([]);
         }
 
         syncResumeUrl(stored);
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         setError(message);
+      } finally {
+        bootingRef.current = false;
       }
     },
-    [gw, syncResumeUrl],
+    [gw, profile, syncResumeUrl],
   );
 
   const resumeStoredSession = useCallback(

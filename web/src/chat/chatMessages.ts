@@ -244,5 +244,68 @@ export function toChatMessagesFromRest(messages: SessionMessage[]): ChatMessage[
   return out;
 }
 
+interface GatewayTranscriptRow {
+  role?: string;
+  text?: string;
+  name?: string;
+  context?: string;
+  reasoning?: string;
+}
+
+/** Convert gateway RPC transcript rows (`session.activate` / `session.resume`). */
+export function toChatMessagesFromGateway(rows: unknown): ChatMessage[] {
+  if (!Array.isArray(rows)) return [];
+
+  const out: ChatMessage[] = [];
+  const pendingTools: ToolEntry[] = [];
+
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as GatewayTranscriptRow;
+    const role = item.role;
+
+    if (role === "tool") {
+      const toolName = item.name ?? "tool";
+      const toolId = nextMessageId("tool");
+      pendingTools.push({
+        kind: "tool",
+        id: toolId,
+        tool_id: toolId,
+        name: toolName,
+        context: item.context,
+        status: "done",
+        startedAt: Date.now(),
+        completedAt: Date.now(),
+      });
+      continue;
+    }
+
+    if (role !== "user" && role !== "assistant" && role !== "system") {
+      continue;
+    }
+
+    const content = typeof item.text === "string" ? item.text : "";
+    if (!content.trim() && role !== "assistant") continue;
+
+    const chat: ChatMessage = {
+      id: nextMessageId(role),
+      role,
+      content,
+      reasoning: item.reasoning,
+    };
+
+    if (role === "assistant" && pendingTools.length > 0) {
+      chat.toolCalls = [...pendingTools];
+      pendingTools.length = 0;
+    }
+
+    if (content.trim() || role === "assistant") {
+      out.push(chat);
+    }
+  }
+
+  return out;
+}
+
 
 export const STREAM_DELTA_FLUSH_MS = 33;
