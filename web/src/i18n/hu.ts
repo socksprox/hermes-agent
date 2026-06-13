@@ -186,6 +186,11 @@ export const hu: Translations = {
     hideSessions: "Munkamenetek elrejtése",
     allSessions: "Összes munkamenet",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

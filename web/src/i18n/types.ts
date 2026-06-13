@@ -209,6 +209,11 @@ export interface Translations {
     hideSessions: string;
     allSessions: string;
     backToNav: string;
+    copyMessage: string;
+    copied: string;
+    forkMessage: string;
+    branched: string;
+    branchFailed: string;
   };
 
   // ── Analytics page ──

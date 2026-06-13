@@ -13,11 +13,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 
 import type { ChatMessage } from "./chatMessages";
+import { MessageBubbleActions } from "./MessageBubbleActions";
 
 interface Props {
   messages: ChatMessage[];
   thinkingStatus?: string | null;
   className?: string;
+  onForkMessage?: (messageId: string) => void;
+  forkingMessageId?: string | null;
 }
 
 function ReasoningBlock({
@@ -67,6 +70,8 @@ export function ChatTranscript({
   messages,
   thinkingStatus,
   className,
+  onForkMessage,
+  forkingMessageId,
 }: Props) {
   const { t } = useI18n();
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -129,8 +134,9 @@ export function ChatTranscript({
           {messages.map((msg) => {
             if (msg.role === "user") {
               return (
-                <div key={msg.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-lg bg-primary/10 px-3 py-2 text-sm">
+                <div key={msg.id} className="group flex justify-end">
+                  <div className="max-w-[85%]">
+                    <div className="rounded-lg bg-primary/10 px-3 py-2 text-sm">
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="mb-2 flex flex-wrap justify-end gap-1.5">
                         {msg.attachments.map((att, idx) =>
@@ -158,6 +164,17 @@ export function ChatTranscript({
                     {msg.content && (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     )}
+                    </div>
+                    <MessageBubbleActions
+                      text={msg.content}
+                      align="end"
+                      onFork={
+                        onForkMessage
+                          ? () => onForkMessage(msg.id)
+                          : undefined
+                      }
+                      forking={forkingMessageId === msg.id}
+                    />
                   </div>
                 </div>
               );
@@ -175,15 +192,16 @@ export function ChatTranscript({
             }
 
             return (
-              <div key={msg.id} className="flex justify-start">
-                <div
-                  className={cn(
-                    "max-w-full rounded-lg px-3 py-2 text-sm",
-                    msg.error
-                      ? "border border-destructive/40 bg-destructive/5"
-                      : "bg-success/10",
-                  )}
-                >
+              <div key={msg.id} className="group flex justify-start">
+                <div className="max-w-full">
+                  <div
+                    className={cn(
+                      "rounded-lg px-3 py-2 text-sm",
+                      msg.error
+                        ? "border border-destructive/40 bg-destructive/5"
+                        : "bg-success/10",
+                    )}
+                  >
                   {msg.reasoning && (
                     <ReasoningBlock
                       text={msg.reasoning}
@@ -202,6 +220,15 @@ export function ChatTranscript({
                   {msg.streaming && !msg.content && (
                     <span className="text-text-tertiary animate-pulse">…</span>
                   )}
+                  </div>
+                  <MessageBubbleActions
+                    text={msg.content}
+                    align="start"
+                    onFork={
+                      onForkMessage ? () => onForkMessage(msg.id) : undefined
+                    }
+                    forking={forkingMessageId === msg.id}
+                  />
                 </div>
               </div>
             );

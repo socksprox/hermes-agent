@@ -186,6 +186,11 @@ export const uk: Translations = {
     hideSessions: "Приховати сесії",
     allSessions: "Усі сесії",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

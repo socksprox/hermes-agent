@@ -1,4 +1,5 @@
 import type { GatewayClient, ConnectionState } from "@/lib/gatewayClient";
+import type { BranchSeedMessage } from "@/lib/chatBranch";
 import {
   createContext,
   useContext,
@@ -35,6 +36,10 @@ export interface ChatSessionContextValue {
   registerOnHydrated?: (fn: (messages: ChatMessage[]) => void) => () => void;
   openSessionPalette?: () => void;
   chatTitle?: string;
+  forkFromMessages?: (
+    seedMessages: BranchSeedMessage[],
+    opts?: { title?: string; displayMessages?: ChatMessage[] },
+  ) => Promise<unknown>;
 }
 
 const ChatSessionContext = createContext<ChatSessionContextValue | null>(null);

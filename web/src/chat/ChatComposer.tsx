@@ -56,6 +56,7 @@ interface Props {
   onQueueEdit(id: string, text: string): void;
   onQueueDelete(id: string): void;
   onSystem(text: string): void;
+  onBranch?: (opts: { name: string }) => Promise<void>;
 }
 
 export function ChatComposer({
@@ -72,6 +73,7 @@ export function ChatComposer({
   onQueueEdit,
   onQueueDelete,
   onSystem,
+  onBranch,
 }: Props) {
   const { showToast } = useToast();
   const [input, setInput] = useState("");
@@ -147,6 +149,7 @@ export function ChatComposer({
             callbacks: {
               sys: onSystem,
               send: (t) => onSubmit({ text: t, attachments: [] }),
+              branch: onBranch,
             },
           });
           clearInput();
@@ -185,6 +188,7 @@ export function ChatComposer({
       onSystem,
       onSubmit,
       onEnqueue,
+      onBranch,
       clearInput,
       clear,
     ],

@@ -186,6 +186,11 @@ export const es: Translations = {
     hideSessions: "Ocultar sesiones",
     allSessions: "Todas las sesiones",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

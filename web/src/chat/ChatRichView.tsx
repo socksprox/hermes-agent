@@ -1,7 +1,12 @@
 import { Button } from "@nous-research/ui/ui/components/button";
-import { useCallback, useEffect, useRef } from "react";
+import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PluginSlot } from "@/plugins";
+import {
+  buildBranchSeedMessages,
+  sliceBranchDisplayMessages,
+} from "@/lib/chatBranch";
 
 import type { SubmitPayload } from "./attachmentTypes";
 import {
@@ -11,12 +16,14 @@ import {
   syncAttachmentsForSubmit,
   withSessionBusyRetry,
 } from "./attachFiles";
+import { nextMessageId, type ChatMessage } from "./chatMessages";
 import { useChatSession } from "./ChatSessionContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatTranscript } from "./ChatTranscript";
 import { PromptOverlays } from "./PromptOverlays";
 import { useMessageQueue } from "./useMessageQueue";
 import { useMessageStream } from "./useMessageStream";
+import { useI18n } from "@/i18n";
 
 export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolean }) {
   const {
@@ -30,7 +37,12 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     request,
     startNewChat,
     registerOnHydrated,
+    forkFromMessages,
   } = useChatSession();
+
+  const { t } = useI18n();
+  const { showToast } = useToast();
+  const [forkingMessageId, setForkingMessageId] = useState<string | null>(null);
 
   const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
     () => {},
@@ -63,6 +75,62 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   }, [registerOnHydrated, messageQueue]);
 
   const mergedInfo = { ...gatewayInfo, ...sessionInfo };
+
+  const runFork = useCallback(
+    async (
+      upToMessageId: string | undefined,
+      title?: string,
+      notify: "toast" | "sys" = "toast",
+    ) => {
+      if (!forkFromMessages) {
+        throw new Error("branch unavailable");
+      }
+      const seed = buildBranchSeedMessages(messages, upToMessageId);
+      const branchTitle = title?.trim() || "Branch";
+      const notice = `branched → ${branchTitle}`;
+      const display: ChatMessage[] = sliceBranchDisplayMessages(
+        messages,
+        upToMessageId,
+      );
+      if (notify === "sys") {
+        display.push({
+          id: nextMessageId("sys"),
+          role: "system",
+          content: notice,
+        });
+      }
+      await forkFromMessages(seed, {
+        title: branchTitle,
+        displayMessages: display,
+      });
+      if (notify === "toast") {
+        showToast(t.chatSession.branched, "success");
+      }
+    },
+    [forkFromMessages, messages, showToast, t.chatSession],
+  );
+
+  const handleForkMessage = useCallback(
+    (messageId: string) => {
+      setForkingMessageId(messageId);
+      void runFork(messageId, undefined, "toast")
+        .catch((err) => {
+          showToast(
+            err instanceof Error ? err.message : t.chatSession.branchFailed,
+            "error",
+          );
+        })
+        .finally(() => setForkingMessageId(null));
+    },
+    [runFork, showToast, t.chatSession.branchFailed],
+  );
+
+  const handleBranchCommand = useCallback(
+    async ({ name }: { name: string }) => {
+      await runFork(undefined, name || undefined, "sys");
+    },
+    [runFork],
+  );
 
   const submitMessage = useCallback(
     async (payload: SubmitPayload) => {
@@ -198,6 +266,8 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
           messages={messages}
           thinkingStatus={thinkingStatus}
           className="flex-1"
+          onForkMessage={forkFromMessages ? handleForkMessage : undefined}
+          forkingMessageId={forkingMessageId}
         />
 
         {overlay && (
@@ -223,6 +293,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
           onQueueEdit={handleQueueEdit}
           onQueueDelete={messageQueue.remove}
           onSystem={addSystemMessage}
+          onBranch={forkFromMessages ? handleBranchCommand : undefined}
         />
       </div>
 

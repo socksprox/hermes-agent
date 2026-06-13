@@ -186,6 +186,11 @@ export const af: Translations = {
     hideSessions: "Versteek sessies",
     allSessions: "Alle sessies",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

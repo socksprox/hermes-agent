@@ -186,6 +186,11 @@ export const tr: Translations = {
     hideSessions: "Oturumları gizle",
     allSessions: "Tüm oturumlar",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

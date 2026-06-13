@@ -186,6 +186,11 @@ export const ja: Translations = {
     hideSessions: "セッションを非表示",
     allSessions: "すべてのセッション",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

@@ -10,6 +10,7 @@ import {
   type ChatMessage,
   type SessionInflightTurn,
 } from "./chatMessages";
+import type { BranchSeedMessage } from "@/lib/chatBranch";
 import type { SessionInfo } from "./useMessageStream";
 
 interface SessionResumeResponse {
@@ -35,6 +36,8 @@ interface SessionActivateResponse {
 interface SessionCreateResponse {
   session_id: string;
   stored_session_id?: string;
+  messages?: unknown[];
+  info?: SessionInfo;
 }
 
 const MAX_RECONNECT_ATTEMPTS = 8;
@@ -105,6 +108,9 @@ export function useChatGateway({
   sessionIdRef.current = sessionId;
   resumeParamRef.current = resumeParam;
 
+  const sessionInfoRef = useRef(sessionInfo);
+  sessionInfoRef.current = sessionInfo;
+
   const syncResumeUrl = useCallback(
     (storedId: string) => {
       persistUrlSyncRef.current = true;
@@ -142,6 +148,65 @@ export function useChatGateway({
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [version],
+  );
+
+  const adoptCreatedSession = useCallback(
+    (created: SessionCreateResponse, fallbackMessages: ChatMessage[]) => {
+      const runtimeId = created.session_id;
+      const stored = created.stored_session_id ?? runtimeId;
+      storedIdRef.current = stored;
+      sessionIdRef.current = runtimeId;
+      urlPersistedRef.current = true;
+      setSessionId(runtimeId);
+      setStoredSessionId(stored);
+      setSessionEnded(false);
+      setError(null);
+
+      const hydrated =
+        Array.isArray(created.messages) && created.messages.length > 0
+          ? toChatMessagesFromGateway(created.messages)
+          : fallbackMessages;
+
+      onHydratedRef.current?.(hydrated);
+
+      if (created.info) {
+        setSessionInfo(created.info);
+        onSessionInfoRef.current?.(created.info);
+      } else {
+        setSessionInfo((prev) => ({ ...prev, running: false }));
+      }
+
+      syncResumeUrl(stored);
+    },
+    [syncResumeUrl],
+  );
+
+  const forkFromMessages = useCallback(
+    async (
+      seedMessages: BranchSeedMessage[],
+      opts?: { title?: string; displayMessages?: ChatMessage[] },
+    ) => {
+      if (seedMessages.length === 0) {
+        throw new Error("nothing to branch — send a message first");
+      }
+
+      if (gw.state !== "open") {
+        await gw.connect();
+      }
+
+      const cwd = sessionInfoRef.current.cwd?.trim();
+      const created = await gw.request<SessionCreateResponse>("session.create", {
+        cols: 80,
+        messages: seedMessages,
+        title: opts?.title?.trim() || "Branch",
+        ...(profile ? { profile } : {}),
+        ...(cwd ? { cwd } : {}),
+      });
+
+      adoptCreatedSession(created, opts?.displayMessages ?? []);
+      return created;
+    },
+    [adoptCreatedSession, gw, profile],
   );
 
   const clearReconnectTimer = useCallback(() => {
@@ -464,5 +529,6 @@ export function useChatGateway({
     activateLiveSession,
     resumeStoredSession,
     startNewChat,
+    forkFromMessages,
   };
 }

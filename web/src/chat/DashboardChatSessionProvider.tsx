@@ -146,6 +146,7 @@ function RichSessionProvider({
     startNewChat: gateway.startNewChat,
     activateLiveSession: gateway.activateLiveSession,
     resumeStoredSession: gateway.resumeStoredSession,
+    forkFromMessages: gateway.forkFromMessages,
     surface: "rich",
     sessionList,
     registerOnHydrated,

@@ -185,6 +185,11 @@ export const zhHant: Translations = {
     hideSessions: "隱藏工作階段",
     allSessions: "所有工作階段",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

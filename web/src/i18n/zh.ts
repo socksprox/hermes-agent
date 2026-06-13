@@ -183,6 +183,11 @@ export const zh: Translations = {
     hideSessions: "隐藏会话",
     allSessions: "所有会话",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

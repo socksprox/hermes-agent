@@ -186,6 +186,11 @@ export const ga: Translations = {
     hideSessions: "Folaigh seisiúin",
     allSessions: "Gach seisiún",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {

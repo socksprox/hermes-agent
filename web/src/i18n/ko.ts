@@ -186,6 +186,11 @@ export const ko: Translations = {
     hideSessions: "세션 숨기기",
     allSessions: "모든 세션",
     backToNav: "Back to navigation",
+    copyMessage: "Copy",
+    copied: "Copied",
+    forkMessage: "Fork to new chat",
+    branched: "Branched to new chat",
+    branchFailed: "Branch failed",
   },
 
   analytics: {
