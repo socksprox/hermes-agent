@@ -69,35 +69,13 @@ const STATE_TONE: Record<
   error: "destructive",
 };
 
-import { PluginSlot } from "@/plugins";
-
 interface ChatSidebarProps {
   channel?: string;
   className?: string;
-  mode?: "rich" | "terminal";
 }
 
-export function ChatSidebar({
-  channel = "",
-  className,
-  mode = "terminal",
-}: ChatSidebarProps) {
-  if (mode === "rich") {
-    return (
-      <aside
-        className={cn(
-          "flex h-full w-full min-w-0 shrink-0 flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1 lg:w-72",
-          className,
-        )}
-      >
-        <PluginSlot name="chat:side" />
-      </aside>
-    );
-  }
-
-  return (
-    <TerminalChatSidebar channel={channel} className={className} />
-  );
+export function ChatSidebar({ channel = "", className }: ChatSidebarProps) {
+  return <TerminalChatSidebar channel={channel} className={className} />;
 }
 
 function TerminalChatSidebar({
