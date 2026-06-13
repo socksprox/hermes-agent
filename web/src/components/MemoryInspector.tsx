@@ -100,7 +100,7 @@ export function MemoryInspector({
       />
 
       {/* Panel */}
-      <div className="relative z-10 flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
+      <div className="relative z-10 flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden border border-border bg-background shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">

@@ -175,6 +175,26 @@ class TestMemoryEndpoints:
             "/api/memory/reset", json={"target": "bogus"}
         ).status_code == 400
 
+    def test_content_read_write(self):
+        from hermes_constants import get_hermes_home
+
+        mem = get_hermes_home() / "memories"
+        (mem / "MEMORY.md").write_text("agent notes")
+        (mem / "USER.md").write_text("user profile")
+
+        data = self.client.get("/api/memory/content").json()
+        assert data == {"memory": "agent notes", "user": "user profile"}
+
+        r = self.client.put(
+            "/api/memory/content",
+            json={"user": "updated profile"},
+        )
+        assert r.status_code == 200 and r.json()["written"] == ["USER.md"]
+        assert (mem / "USER.md").read_text() == "updated profile"
+        assert (mem / "MEMORY.md").read_text() == "agent notes"
+
+        assert self.client.put("/api/memory/content", json={}).status_code == 400
+
 
 class TestPairingEndpoints:
     @pytest.fixture(autouse=True)

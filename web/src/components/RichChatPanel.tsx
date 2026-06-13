@@ -33,7 +33,6 @@ import {
   Send,
   Sparkles,
   TriangleAlert,
-  User2,
   XCircle,
   CheckCircle,
 } from "lucide-react";
@@ -643,7 +642,7 @@ export function RichChatPanel({
                 <button
                   key={chip.text}
                   onClick={() => void setInput(chip.text)}
-                  className="rounded-xl border border-border/50 bg-card px-4 py-3 text-sm text-muted-foreground hover:bg-accent transition-colors"
+                  className="border border-border bg-background-base/40 px-4 py-3 text-sm text-muted-foreground hover:bg-background-base/70 transition-colors text-left"
                 >
                   {chip.label}
                 </button>
@@ -652,7 +651,7 @@ export function RichChatPanel({
           </div>
         ) : (
           /* ---- Centered message column ---- */
-          <div className="mx-auto max-w-3xl w-full space-y-6">
+          <div className="mx-auto max-w-3xl w-full flex flex-col gap-3">
             {messages.map((msg) => (
               <MessageBlock
                 key={msg.id}
@@ -679,7 +678,7 @@ export function RichChatPanel({
         {showScrollHint && (
           <button
             onClick={scrollToBottom}
-            className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs text-text-secondary backdrop-blur-sm transition-opacity hover:text-foreground"
+            className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 border border-border bg-background/90 px-3 py-1.5 text-xs text-text-secondary backdrop-blur-sm transition-opacity hover:text-foreground"
           >
             <ArrowDown className="h-3 w-3" />
             New messages
@@ -689,10 +688,10 @@ export function RichChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Modern floating input area */}
-      <div className="sticky bottom-0 border-t border-border/50 bg-background/80 backdrop-blur-md px-4 py-4">
+      {/* Composer — flat border style matching Sessions page */}
+      <div className="sticky bottom-0 border-t border-border bg-background px-4 py-3">
         <div className="mx-auto max-w-3xl">
-          <div className="flex items-end gap-2 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg">
+          <div className="flex items-end gap-2 border border-border bg-background-base/40 px-3 py-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -709,7 +708,7 @@ export function RichChatPanel({
               size="icon"
               onClick={sendMessage}
               disabled={!input.trim() || !ptyWs || ptyWs.readyState !== WebSocket.OPEN}
-              className="shrink-0 rounded-xl bg-primary text-white"
+              className="shrink-0"
               title="Send message"
             >
               <Send size={18} />
@@ -774,17 +773,13 @@ function MessageBlock({
   /* ---- User message ---- */
   if (isUser) {
     return (
-      <div className="flex justify-end">
-        <div className="flex items-end gap-3">
-          <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-primary/10 px-5 py-3 text-sm text-foreground shadow-sm">
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          </div>
-          <div className="shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/10">
-              <User2 className="h-4 w-4 text-primary" />
-            </div>
-          </div>
+      <div className="bg-primary/10 p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-semibold text-primary">You</span>
         </div>
+        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+          {message.content}
+        </p>
       </div>
     );
   }
@@ -798,16 +793,15 @@ function MessageBlock({
   const isCopied = copiedMsgId === message.id;
 
   return (
-    <div className="flex gap-3">
-      {/* Avatar — larger 32px circle */}
-      <div className="shrink-0 pt-0.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/10">
-          <Sparkles className="h-4 w-4 text-primary" />
-        </div>
+    <div className="bg-success/10 p-3">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-xs font-semibold text-success">Assistant</span>
+        {message.streaming && (
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+        )}
       </div>
 
-      {/* Content column — neutral card background */}
-      <div className="min-w-0 flex-1 space-y-3">
+      <div className="space-y-2">
         {/* Thinking block (collapsible) */}
         {hasThinking && (
           <ThinkingBlock
@@ -828,19 +822,17 @@ function MessageBlock({
         ))}
 
         {/* Markdown content with copy button */}
-        <div className="relative rounded-xl border border-border/30 bg-card p-4 shadow-sm">
+        <div className="relative">
           <Markdown
             content={message.content}
             streaming={message.streaming}
           />
-          {/* Copy button */}
           <button
             onClick={() => onCopyMessage(message.content)}
             className={cn(
-              "absolute -right-2 -top-2 z-10 rounded-md p-1.5 transition-opacity",
+              "absolute right-0 top-0 z-10 border border-border bg-background/90 p-1.5 transition-opacity",
               "opacity-0 hover:opacity-100 focus:opacity-100",
               "text-text-tertiary hover:text-foreground",
-              "bg-background/90 backdrop-blur-sm shadow-sm",
             )}
             title="Copy message"
           >
@@ -1044,7 +1036,7 @@ function ThinkingBlock({
   onToggle: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-border/20 bg-muted/10 overflow-hidden">
+    <div className="border border-border/20 bg-muted/10 overflow-hidden">
       <button
         onClick={onToggle}
         className="flex w-full items-center gap-2 px-4 py-2 text-xs text-text-secondary hover:text-foreground transition-colors"
@@ -1082,7 +1074,7 @@ function SkillCard({ tool }: { tool: ToolEntry }) {
   const actionLabel = isView ? "viewing" : "managing";
 
   return (
-    <div className="rounded-lg border border-border/30 bg-muted/10 overflow-hidden">
+    <div className="border border-border/30 bg-muted/10 overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-foreground/5 transition-colors"
@@ -1137,7 +1129,7 @@ function ToolGroup({
   const Chevron = isOpen ? ChevronDown : ChevronRight;
 
   return (
-    <div className="rounded-xl border border-border/30 bg-muted/5 overflow-hidden">
+    <div className="border border-border/30 bg-muted/5 overflow-hidden">
       <button
         onClick={onToggle}
         className="flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-xs hover:bg-foreground/8 active:bg-foreground/12 transition-colors"
