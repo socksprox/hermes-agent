@@ -1510,6 +1510,9 @@ DEFAULT_CONFIG = {
             "fields": ["model", "context_pct", "cwd"],  # Order shown; drop any to hide
         },
         "copy_shortcut": "auto",  # "auto" (platform default) | "ctrl_c" | "ctrl_shift_c" | "disabled"
+        # Dashboard /chat surface: "rich" (gateway-native React chat, default) or
+        # "terminal" (embedded hermes --tui via PTY). Change in Config → reload chat tab.
+        "dashboard_chat_surface": "rich",
     },
 
     # Web dashboard settings

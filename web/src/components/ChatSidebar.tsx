@@ -69,12 +69,44 @@ const STATE_TONE: Record<
   error: "destructive",
 };
 
+import { PluginSlot } from "@/plugins";
+
 interface ChatSidebarProps {
-  channel: string;
+  channel?: string;
   className?: string;
+  mode?: "rich" | "terminal";
 }
 
-export function ChatSidebar({ channel, className }: ChatSidebarProps) {
+export function ChatSidebar({
+  channel = "",
+  className,
+  mode = "terminal",
+}: ChatSidebarProps) {
+  if (mode === "rich") {
+    return (
+      <aside
+        className={cn(
+          "flex h-full w-full min-w-0 shrink-0 flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1 lg:w-72",
+          className,
+        )}
+      >
+        <PluginSlot name="chat:side" />
+      </aside>
+    );
+  }
+
+  return (
+    <TerminalChatSidebar channel={channel} className={className} />
+  );
+}
+
+function TerminalChatSidebar({
+  channel,
+  className,
+}: {
+  channel: string;
+  className?: string;
+}) {
   // `version` bumps on reconnect; gw is derived so we never call setState
   // for it inside an effect (React 19's set-state-in-effect rule). The
   // counter is the dependency on purpose — it's not read in the memo body,
