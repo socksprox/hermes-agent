@@ -784,10 +784,9 @@ export default function App() {
             <div
               className={cn(
                 "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
-                "px-3 sm:px-6",
                 isChatRoute
-                  ? "pb-0 pt-1 sm:pt-2 lg:pt-4"
-                  : "pt-2 sm:pt-4 lg:pt-6",
+                  ? "px-0 pb-0 pt-0"
+                  : "px-3 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-2 sm:px-6 sm:pt-4 lg:pb-8 lg:pt-6",
                 isDocsRoute && "min-h-0 flex-1",
               )}
             >
@@ -795,8 +794,6 @@ export default function App() {
               <div
                 className={cn(
                   "w-full min-w-0",
-                  !isChatRoute &&
-                    "pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:pb-8",
                   (isDocsRoute || isChatRoute) &&
                     "min-h-0 flex flex-1 flex-col",
                 )}

@@ -173,11 +173,11 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   }, [sessionId]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col">
       <PluginSlot name="chat:top" />
 
       {(gatewayError || sessionEnded) && (
-        <div className="flex flex-wrap items-center gap-2 border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+        <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
           <span>{gatewayError ?? "Session ended"}</span>
           {sessionEnded && (
             <Button size="sm" outlined onClick={startNewChat}>
@@ -187,7 +187,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/30 bg-background-base/50">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {connecting && messages.length === 0 && (
           <p className="px-4 py-2 text-xs text-text-tertiary">
             Connecting to gateway…

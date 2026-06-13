@@ -32,7 +32,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 
 import { ChatSidebar } from "@/components/ChatSidebar";
-import { usePageHeader } from "@/contexts/usePageHeader";
+import { useChatPageHeaderExtraEnd } from "@/chat/ChatShell";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { PluginSlot } from "@/plugins";
@@ -149,7 +149,6 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
   // tabs because the dep wouldn't change on tab switch.
   const [mobilePanelOpenRaw, setMobilePanelOpenRaw] = useState(false);
   const mobilePanelOpen = isActive && mobilePanelOpenRaw;
-  const { setEnd } = usePageHeader();
   const { t } = useI18n();
   const closeMobilePanel = useCallback(() => setMobilePanelOpenRaw(false), []);
   const modelToolsLabel = useMemo(
@@ -241,37 +240,30 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  useEffect(() => {
-    // When hidden (non-chat tab) we must not register the header button —
-    // another page owns the header's end slot at that point.
-    if (!isActive) {
-      setEnd(null);
-      return;
-    }
-    if (!narrow) {
-      setEnd(null);
-      return;
-    }
-    setEnd(
-      <Button
-        ghost
-        onClick={() => setMobilePanelOpenRaw(true)}
-        aria-expanded={mobilePanelOpen}
-        aria-controls="chat-side-panel"
-        className={cn(
-          "shrink-0 rounded border border-current/20",
-          "px-2 py-1 text-xs font-medium tracking-wide",
-          "text-text-secondary hover:text-midground hover:bg-midground/5",
-        )}
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <PanelRight className="h-3 w-3 shrink-0" />
-          {modelToolsLabel}
-        </span>
-      </Button>,
-    );
-    return () => setEnd(null);
-  }, [isActive, narrow, mobilePanelOpen, modelToolsLabel, setEnd]);
+  const mobilePanelHeaderButton = useMemo(
+    () =>
+      isActive && narrow ? (
+        <Button
+          ghost
+          onClick={() => setMobilePanelOpenRaw(true)}
+          aria-expanded={mobilePanelOpen}
+          aria-controls="chat-side-panel"
+          className={cn(
+            "shrink-0 rounded border border-current/20",
+            "px-2 py-1 text-xs font-medium tracking-wide",
+            "text-text-secondary hover:text-midground hover:bg-midground/5",
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <PanelRight className="h-3 w-3 shrink-0" />
+            {modelToolsLabel}
+          </span>
+        </Button>
+      ) : null,
+    [isActive, mobilePanelOpen, modelToolsLabel, narrow],
+  );
+
+  useChatPageHeaderExtraEnd(mobilePanelHeaderButton);
 
   const handleCopyLast = () => {
     const ws = wsRef.current;
