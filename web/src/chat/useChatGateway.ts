@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api, type SessionMessage } from "@/lib/api";
 import { GatewayClient, type ConnectionState } from "@/lib/gatewayClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -9,7 +9,17 @@ import type { SessionInfo } from "./useMessageStream";
 interface SessionResumeResponse {
   session_id: string;
   stored_session_id?: string;
+  resumed?: string;
   running?: boolean;
+  info?: SessionInfo;
+  messages?: unknown[];
+}
+
+interface SessionActivateResponse {
+  session_id: string;
+  session_key?: string;
+  running?: boolean;
+  status?: string;
   info?: SessionInfo;
   messages?: unknown[];
 }
@@ -56,6 +66,7 @@ export function useChatGateway({
   const urlPersistedRef = useRef(false);
   /** Set before URL ?resume= sync so the gateway effect skips teardown/rebind. */
   const persistUrlSyncRef = useRef(false);
+  const resumeParamRef = useRef(resumeParam);
   const onHydratedRef = useRef(onHydrated);
   const onSessionInfoRef = useRef(onSessionInfo);
   const bindSessionRef = useRef<
@@ -65,6 +76,22 @@ export function useChatGateway({
   onHydratedRef.current = onHydrated;
   onSessionInfoRef.current = onSessionInfo;
   sessionIdRef.current = sessionId;
+  resumeParamRef.current = resumeParam;
+
+  const syncResumeUrl = useCallback(
+    (storedId: string) => {
+      persistUrlSyncRef.current = true;
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("resume", storedId);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   const gw = useMemo(
     () =>
@@ -134,11 +161,19 @@ export function useChatGateway({
             onHydratedRef.current?.(
               toChatMessagesFromRest(prefetchResult.messages),
             );
+          } else if (
+            Array.isArray(resumed.messages) &&
+            resumed.messages.length > 0
+          ) {
+            onHydratedRef.current?.(
+              toChatMessagesFromRest(resumed.messages as SessionMessage[]),
+            );
           }
 
           const runtimeId = resumed.session_id;
-          const stored = resumed.stored_session_id ?? targetId;
+          const stored = resumed.stored_session_id ?? resumed.resumed ?? targetId;
           storedIdRef.current = stored;
+          sessionIdRef.current = runtimeId;
           setStoredSessionId(stored);
           setSessionId(runtimeId);
 
@@ -163,6 +198,7 @@ export function useChatGateway({
           setSessionId(runtimeId);
           setStoredSessionId(stored);
           storedIdRef.current = stored;
+          sessionIdRef.current = runtimeId;
           onHydratedRef.current?.([]);
         }
       } catch (e) {
@@ -188,17 +224,24 @@ export function useChatGateway({
         if (cancelled || !res.session_id || res.session_id === resumeParam) {
           return;
         }
-        const next = new URLSearchParams(searchParams);
-        next.set("resume", res.session_id);
-        setSearchParams(next, { replace: true });
+        persistUrlSyncRef.current = true;
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("resume", res.session_id);
+            return next;
+          },
+          { replace: true },
+        );
       })
       .catch(() => {});
 
     return () => {
       cancelled = true;
     };
-  }, [resumeParam, profile, searchParams, setSearchParams]);
+  }, [resumeParam, profile, setSearchParams]);
 
+  // WebSocket lifecycle — only reconnect when the client instance changes.
   useEffect(() => {
     wantReconnectRef.current = true;
     clearReconnectTimer();
@@ -209,37 +252,20 @@ export function useChatGateway({
         setSessionInfo((prev) => ({ ...prev, ...ev.payload }));
         onSessionInfoRef.current?.(ev.payload!);
       }
-      if (ev.session_id) setSessionId(ev.session_id);
+      if (ev.session_id) {
+        sessionIdRef.current = ev.session_id;
+        setSessionId(ev.session_id);
+      }
     });
 
     const offComplete = gw.on("message.complete", () => {
-      if (urlPersistedRef.current || resumeParam) return;
+      if (urlPersistedRef.current || resumeParamRef.current) return;
       const persistId = storedIdRef.current;
       if (!persistId) return;
       urlPersistedRef.current = true;
       setStoredSessionId(persistId);
-      persistUrlSyncRef.current = true;
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set("resume", persistId);
-          return next;
-        },
-        { replace: true },
-      );
+      syncResumeUrl(persistId);
     });
-
-    const alreadyOnThisSession =
-      !!resumeParam &&
-      storedIdRef.current === resumeParam &&
-      !!sessionIdRef.current &&
-      gw.state === "open";
-
-    if (!alreadyOnThisSession) {
-      void bindSession(resumeParam, { resume: !!resumeParam });
-    } else {
-      setError(null);
-    }
 
     return () => {
       wantReconnectRef.current = false;
@@ -253,7 +279,22 @@ export function useChatGateway({
       }
       gw.close();
     };
-  }, [gw, resumeParam, profile, bindSession, clearReconnectTimer, setSearchParams]);
+  }, [gw, clearReconnectTimer, syncResumeUrl]);
+
+  // Session bind — URL deep-links and cold resumes; must not close the socket.
+  useEffect(() => {
+    const alreadyOnThisSession =
+      !!resumeParam &&
+      storedIdRef.current === resumeParam &&
+      !!sessionIdRef.current &&
+      gw.state === "open";
+
+    if (!alreadyOnThisSession) {
+      void bindSession(resumeParam, { resume: !!resumeParam });
+    } else {
+      setError(null);
+    }
+  }, [gw, resumeParam, profile, bindSession]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>
@@ -266,6 +307,73 @@ export function useChatGateway({
     await gw.request("session.interrupt", { session_id: sessionId });
     setSessionInfo((prev) => ({ ...prev, running: false }));
   }, [gw, sessionId]);
+
+  const activateLiveSession = useCallback(
+    async (runtimeId: string) => {
+      if (bootingRef.current) return;
+      setError(null);
+      setSessionEnded(false);
+
+      try {
+        if (gw.state !== "open") {
+          await gw.connect();
+        }
+
+        const activated = await gw.request<SessionActivateResponse>(
+          "session.activate",
+          { session_id: runtimeId },
+        );
+
+        const runtime = activated.session_id;
+        const stored = activated.session_key ?? storedIdRef.current ?? runtimeId;
+        const running = Boolean(
+          activated.running ||
+            activated.status === "working" ||
+            activated.status === "waiting",
+        );
+
+        storedIdRef.current = stored;
+        sessionIdRef.current = runtime;
+        urlPersistedRef.current = true;
+        setSessionId(runtime);
+        setStoredSessionId(stored);
+
+        const info = { ...(activated.info ?? {}), running };
+        setSessionInfo(info);
+        onSessionInfoRef.current?.(info);
+
+        if (Array.isArray(activated.messages) && activated.messages.length > 0) {
+          onHydratedRef.current?.(
+            toChatMessagesFromRest(activated.messages as SessionMessage[]),
+          );
+        }
+
+        syncResumeUrl(stored);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      }
+    },
+    [gw, syncResumeUrl],
+  );
+
+  const resumeStoredSession = useCallback(
+    async (storedId: string) => {
+      const alreadyOnThisSession =
+        storedIdRef.current === storedId &&
+        !!sessionIdRef.current &&
+        gw.state === "open";
+
+      if (alreadyOnThisSession) {
+        syncResumeUrl(storedId);
+        return;
+      }
+
+      await bindSession(storedId, { resume: true });
+      syncResumeUrl(storedId);
+    },
+    [bindSession, gw.state, syncResumeUrl],
+  );
 
   const startNewChat = useCallback(() => {
     wantReconnectRef.current = false;
@@ -303,6 +411,8 @@ export function useChatGateway({
     sessionEnded,
     request,
     interrupt,
+    activateLiveSession,
+    resumeStoredSession,
     startNewChat,
   };
 }

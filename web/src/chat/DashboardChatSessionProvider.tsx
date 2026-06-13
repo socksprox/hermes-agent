@@ -143,6 +143,8 @@ function RichSessionProvider({
     sessionEnded: gateway.sessionEnded,
     request: gateway.request,
     startNewChat: gateway.startNewChat,
+    activateLiveSession: gateway.activateLiveSession,
+    resumeStoredSession: gateway.resumeStoredSession,
     surface: "rich",
     sessionList,
     registerOnHydrated,

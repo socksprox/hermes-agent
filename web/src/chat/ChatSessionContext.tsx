@@ -19,6 +19,10 @@ export interface ChatSessionContextValue {
     params?: Record<string, unknown>,
   ) => Promise<T>;
   startNewChat: () => void;
+  /** Switch focus to an in-memory session (runtime id from session.active_list). */
+  activateLiveSession?: (runtimeId: string) => void;
+  /** Resume a stored session row (DB id from session.list). */
+  resumeStoredSession?: (storedId: string) => void;
   surface: "rich" | "terminal";
   sessionList: UseSessionListResult;
   registerOnHydrated?: (fn: (messages: ChatMessage[]) => void) => () => void;

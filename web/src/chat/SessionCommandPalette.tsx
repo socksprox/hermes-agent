@@ -4,7 +4,6 @@ import { Input } from "@nous-research/ui/ui/components/input";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   Dialog,
@@ -16,6 +15,7 @@ import { useI18n } from "@/i18n";
 import { useProfileScope } from "@/contexts/useProfileScope";
 
 import { sessionDisplayTitle } from "./sessionListCore";
+import { useChatSession } from "./ChatSessionContext";
 
 interface Props {
   open: boolean;
@@ -25,8 +25,7 @@ interface Props {
 export function SessionCommandPalette({ open, onClose }: Props) {
   const { t } = useI18n();
   const { profile } = useProfileScope();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { resumeStoredSession } = useChatSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<
     { session_id: string; snippet: string }[]
@@ -73,12 +72,12 @@ export function SessionCommandPalette({ open, onClose }: Props) {
 
   const resumeSession = useCallback(
     (id: string) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("resume", id);
-      navigate(`/chat?${next.toString()}`);
+      if (resumeStoredSession) {
+        void resumeStoredSession(id);
+      }
       onClose();
     },
-    [navigate, onClose, searchParams],
+    [onClose, resumeStoredSession],
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {

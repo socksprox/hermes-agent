@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { useI18n } from "@/i18n";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -239,21 +239,36 @@ export function SessionListPanel({
   onSessionSelect,
 }: Props) {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useProfileScope();
-  const { gw, startNewChat, sessionList } = useChatSession();
+  const {
+    gw,
+    startNewChat,
+    activateLiveSession,
+    resumeStoredSession,
+    sessionList,
+  } = useChatSession();
   const resumeId = searchParams.get("resume");
   const { live, history, loading, error, refresh } = sessionList;
 
-  const resumeSession = useCallback(
-    (id: string) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("resume", id);
-      navigate(`/chat?${next.toString()}`);
+  const pickStoredSession = useCallback(
+    (storedId: string) => {
+      if (resumeStoredSession) {
+        void resumeStoredSession(storedId);
+      }
       onSessionSelect?.();
     },
-    [navigate, onSessionSelect, searchParams],
+    [onSessionSelect, resumeStoredSession],
+  );
+
+  const pickLiveSession = useCallback(
+    (runtimeId: string) => {
+      if (activateLiveSession) {
+        void activateLiveSession(runtimeId);
+      }
+      onSessionSelect?.();
+    },
+    [activateLiveSession, onSessionSelect],
   );
 
   const handleRename = useCallback(
@@ -317,7 +332,7 @@ export function SessionListPanel({
                 key={item.id}
                 item={item}
                 active={resumeId === item.id || resumeId === item.session_key}
-                onResume={resumeSession}
+                onResume={pickLiveSession}
               />
             ))}
           </div>
@@ -333,7 +348,7 @@ export function SessionListPanel({
                 key={item.id}
                 item={item}
                 active={resumeId === item.id}
-                onResume={resumeSession}
+                onResume={pickStoredSession}
                 onRename={handleRename}
                 onDelete={handleDelete}
               />
