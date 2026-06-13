@@ -1,8 +1,9 @@
 import { Markdown } from "@/components/Markdown";
 import { ToolCall } from "@/components/ToolCall";
+import { Button } from "@nous-research/ui/ui/components/button";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ChevronDown, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ChatMessage } from "./chatMessages";
 
@@ -48,6 +49,13 @@ function ReasoningBlock({
   );
 }
 
+function scrollHostToBottom(el: HTMLDivElement) {
+  el.scrollTop = el.scrollHeight;
+  requestAnimationFrame(() => {
+    el.scrollTop = el.scrollHeight;
+  });
+}
+
 export function ChatTranscript({
   messages,
   thinkingStatus,
@@ -57,11 +65,29 @@ export function ChatTranscript({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [nearBottom, setNearBottom] = useState(true);
 
+  const isStreaming =
+    messages.some((m) => m.streaming) || !!thinkingStatus;
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    setNearBottom(true);
+    const el = hostRef.current;
+    if (el) {
+      if (behavior === "auto") {
+        scrollHostToBottom(el);
+      } else {
+        bottomRef.current?.scrollIntoView({ behavior });
+        requestAnimationFrame(() => {
+          bottomRef.current?.scrollIntoView({ behavior });
+        });
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (nearBottom) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToBottom("smooth");
     }
-  }, [messages, nearBottom, thinkingStatus]);
+  }, [messages, nearBottom, thinkingStatus, scrollToBottom]);
 
   const onScroll = () => {
     const el = hostRef.current;
@@ -69,6 +95,8 @@ export function ChatTranscript({
     const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
     setNearBottom(gap < 80);
   };
+
+  const showJumpToBottom = !nearBottom && isStreaming;
 
   if (messages.length === 0) {
     return (
@@ -155,6 +183,21 @@ export function ChatTranscript({
           <div ref={bottomRef} />
         </div>
       </div>
+
+      {showJumpToBottom && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+          <Button
+            type="button"
+            size="sm"
+            outlined
+            className="pointer-events-auto gap-1.5 rounded-full border-border/60 bg-background-base/95 px-3 py-1 text-xs shadow-md backdrop-blur-sm"
+            onClick={() => scrollToBottom("auto")}
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+            New messages
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

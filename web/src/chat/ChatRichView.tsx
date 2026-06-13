@@ -1,6 +1,6 @@
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useProfileScope } from "@/contexts/useProfileScope";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { PluginSlot } from "@/plugins";
 
@@ -8,6 +8,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatTranscript } from "./ChatTranscript";
 import { PromptOverlays } from "./PromptOverlays";
 import { useChatGateway } from "./useChatGateway";
+import { useMessageQueue } from "./useMessageQueue";
 import { useMessageStream } from "./useMessageStream";
 
 export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolean }) {
@@ -16,6 +17,10 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
     () => {},
   );
+  const pendingImmediateRef = useRef<string | null>(null);
+  const drainingRef = useRef(false);
+
+  const messageQueue = useMessageQueue();
 
   const {
     gw,
@@ -28,7 +33,11 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     startNewChat,
   } = useChatGateway({
     profile: scopedProfile,
-    onHydrated: (next) => resetRef.current(next),
+    onHydrated: (next) => {
+      messageQueue.clear();
+      pendingImmediateRef.current = null;
+      resetRef.current(next);
+    },
   });
 
   const {
@@ -46,7 +55,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
 
   const mergedInfo = { ...gatewayInfo, ...sessionInfo };
 
-  const handleSubmit = useCallback(
+  const submitMessage = useCallback(
     async (text: string) => {
       if (!sessionId) return;
       addUserMessage(text);
@@ -55,8 +64,84 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     [sessionId, addUserMessage, request],
   );
 
+  const handleSubmit = useCallback(
+    async (text: string) => {
+      if (!sessionId) return;
+      if (mergedInfo.running) {
+        messageQueue.enqueue(text);
+        return;
+      }
+      await submitMessage(text);
+    },
+    [sessionId, mergedInfo.running, messageQueue, submitMessage],
+  );
+
+  const handleEnqueue = useCallback(
+    (text: string) => {
+      messageQueue.enqueue(text);
+    },
+    [messageQueue],
+  );
+
+  const handleQueueSendNow = useCallback(
+    async (id: string) => {
+      const item = messageQueue.take(id);
+      if (!item || !sessionId || !gw) return;
+
+      pendingImmediateRef.current = item.text;
+
+      if (mergedInfo.running) {
+        try {
+          await gw.request("session.interrupt", { session_id: sessionId });
+        } catch {
+          messageQueue.enqueue(item.text);
+          pendingImmediateRef.current = null;
+        }
+      }
+    },
+    [messageQueue, sessionId, gw, mergedInfo.running],
+  );
+
+  const handleQueueEdit = useCallback(
+    (id: string, _text: string) => {
+      messageQueue.remove(id);
+    },
+    [messageQueue],
+  );
+
   const connecting =
     connectionState === "connecting" || connectionState === "idle";
+
+  useEffect(() => {
+    if (mergedInfo.running || connecting || overlay || drainingRef.current) {
+      return;
+    }
+
+    const immediate = pendingImmediateRef.current;
+    if (immediate) {
+      pendingImmediateRef.current = null;
+      drainingRef.current = true;
+      void submitMessage(immediate).finally(() => {
+        drainingRef.current = false;
+      });
+      return;
+    }
+
+    const head = messageQueue.peek();
+    if (!head) return;
+
+    messageQueue.dequeue();
+    drainingRef.current = true;
+    void submitMessage(head.text).finally(() => {
+      drainingRef.current = false;
+    });
+  }, [mergedInfo.running, connecting, overlay, messageQueue.queue, submitMessage]);
+
+  useEffect(() => {
+    messageQueue.clear();
+    pendingImmediateRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when session changes
+  }, [sessionId]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -102,7 +187,12 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
           provider={mergedInfo.provider}
           running={mergedInfo.running}
           disabled={connecting || !!overlay}
+          queue={messageQueue.queue}
           onSubmit={handleSubmit}
+          onEnqueue={handleEnqueue}
+          onQueueSendNow={(id) => void handleQueueSendNow(id)}
+          onQueueEdit={handleQueueEdit}
+          onQueueDelete={messageQueue.remove}
           onSystem={addSystemMessage}
         />
       </div>
