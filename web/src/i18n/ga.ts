@@ -168,6 +168,25 @@ export const ga: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "Comhrá nua",
+    sessions: "Seisiúin",
+    searchSessions: "Cuardaigh seisiúin",
+    searchPlaceholder: "Cuardaigh ábhar teachtaireachta...",
+    renameSession: "Athainmnigh an seisiún",
+    deleteSession: "Scrios an seisiún",
+    untitledSession: "Seisiún gan teideal",
+    liveSessions: "Beo",
+    recentSessions: "Le déanaí",
+    noSessions: "Gan seisiúin go fóill",
+    noMatch: "Níl aon seisiúin comhoiriúnacha",
+    startConversation:
+      "Tosaigh comhrá — sruthaíonn teachtaireachtaí anseo i bhfíor-am.",
+    showSessions: "Taispeáin seisiúin",
+    hideSessions: "Folaigh seisiúin",
+    allSessions: "Gach seisiún",
+  },
+
   analytics: {
     period: "Tréimhse:",
     totalTokens: "Tokens iomlána",

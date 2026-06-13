@@ -168,6 +168,25 @@ export const ru: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "Новый чат",
+    sessions: "Сессии",
+    searchSessions: "Поиск сессий",
+    searchPlaceholder: "Поиск по содержимому сообщений...",
+    renameSession: "Переименовать сессию",
+    deleteSession: "Удалить сессию",
+    untitledSession: "Сессия без названия",
+    liveSessions: "В сети",
+    recentSessions: "Недавние",
+    noSessions: "Сессий пока нет",
+    noMatch: "Нет подходящих сессий",
+    startConversation:
+      "Начните разговор — сообщения отображаются здесь в реальном времени.",
+    showSessions: "Показать сессии",
+    hideSessions: "Скрыть сессии",
+    allSessions: "Все сессии",
+  },
+
   analytics: {
     period: "Период:",
     totalTokens: "Всего токенов",

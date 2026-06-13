@@ -168,6 +168,25 @@ export const uk: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "Новий чат",
+    sessions: "Сесії",
+    searchSessions: "Пошук сесій",
+    searchPlaceholder: "Пошук у вмісті повідомлень...",
+    renameSession: "Перейменувати сесію",
+    deleteSession: "Видалити сесію",
+    untitledSession: "Сесія без назви",
+    liveSessions: "Наживо",
+    recentSessions: "Нещодавні",
+    noSessions: "Поки немає сесій",
+    noMatch: "Немає відповідних сесій",
+    startConversation:
+      "Почніть розмову — повідомлення відображаються тут у реальному часі.",
+    showSessions: "Показати сесії",
+    hideSessions: "Приховати сесії",
+    allSessions: "Усі сесії",
+  },
+
   analytics: {
     period: "Період:",
     totalTokens: "Усього токенів",

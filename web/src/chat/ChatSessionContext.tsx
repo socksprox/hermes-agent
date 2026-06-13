@@ -1,0 +1,51 @@
+import type { GatewayClient, ConnectionState } from "@/lib/gatewayClient";
+import { createContext, useContext, type ReactNode } from "react";
+
+import type { ChatMessage } from "./chatMessages";
+import type { SessionInfo } from "./useMessageStream";
+
+export interface ChatSessionContextValue {
+  gw: GatewayClient | null;
+  sessionId: string | null;
+  storedSessionId: string | null;
+  resumeSessionId: string | null;
+  sessionInfo: SessionInfo;
+  connectionState: ConnectionState;
+  error: string | null;
+  sessionEnded: boolean;
+  request: <T>(
+    method: string,
+    params?: Record<string, unknown>,
+  ) => Promise<T>;
+  startNewChat: () => void;
+  surface: "rich" | "terminal";
+  registerOnHydrated?: (fn: (messages: ChatMessage[]) => void) => () => void;
+}
+
+const ChatSessionContext = createContext<ChatSessionContextValue | null>(null);
+
+export function ChatSessionProvider({
+  value,
+  children,
+}: {
+  value: ChatSessionContextValue;
+  children: ReactNode;
+}) {
+  return (
+    <ChatSessionContext.Provider value={value}>
+      {children}
+    </ChatSessionContext.Provider>
+  );
+}
+
+export function useChatSession(): ChatSessionContextValue {
+  const ctx = useContext(ChatSessionContext);
+  if (!ctx) {
+    throw new Error("useChatSession must be used within ChatSessionProvider");
+  }
+  return ctx;
+}
+
+export function useOptionalChatSession(): ChatSessionContextValue | null {
+  return useContext(ChatSessionContext);
+}

@@ -1,5 +1,4 @@
 import { Button } from "@nous-research/ui/ui/components/button";
-import { useProfileScope } from "@/contexts/useProfileScope";
 import { useCallback, useEffect, useRef } from "react";
 
 import { PluginSlot } from "@/plugins";
@@ -12,24 +11,15 @@ import {
   syncAttachmentsForSubmit,
   withSessionBusyRetry,
 } from "./attachFiles";
+import { useChatSession } from "./ChatSessionContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatTranscript } from "./ChatTranscript";
 import { PromptOverlays } from "./PromptOverlays";
-import { useChatGateway } from "./useChatGateway";
+import { useSessionList } from "./useSessionList";
 import { useMessageQueue } from "./useMessageQueue";
 import { useMessageStream } from "./useMessageStream";
 
 export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolean }) {
-  const { profile: scopedProfile } = useProfileScope();
-
-  const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
-    () => {},
-  );
-  const pendingImmediateRef = useRef<SubmitPayload | null>(null);
-  const drainingRef = useRef(false);
-
-  const messageQueue = useMessageQueue();
-
   const {
     gw,
     connectionState,
@@ -39,13 +29,21 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     sessionEnded,
     request,
     startNewChat,
-  } = useChatGateway({
-    profile: scopedProfile,
-    onHydrated: (next) => {
-      messageQueue.clear();
-      pendingImmediateRef.current = null;
-      resetRef.current(next);
-    },
+    registerOnHydrated,
+  } = useChatSession();
+
+  const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
+    () => {},
+  );
+  const pendingImmediateRef = useRef<SubmitPayload | null>(null);
+  const drainingRef = useRef(false);
+
+  const messageQueue = useMessageQueue();
+
+  const sessionList = useSessionList({
+    gw,
+    sessionId,
+    enabled: !!gw,
   });
 
   const {
@@ -60,6 +58,15 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   } = useMessageStream({ gw, sessionId });
 
   resetRef.current = resetMessages;
+
+  useEffect(() => {
+    if (!registerOnHydrated) return;
+    return registerOnHydrated((next) => {
+      messageQueue.clear();
+      pendingImmediateRef.current = null;
+      resetRef.current(next);
+    });
+  }, [registerOnHydrated, messageQueue]);
 
   const mergedInfo = { ...gatewayInfo, ...sessionInfo };
 
@@ -171,6 +178,8 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when session changes
   }, [sessionId]);
 
+  const recentSessions = sessionList.history.slice(0, 5);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <PluginSlot name="chat:top" />
@@ -196,6 +205,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
         <ChatTranscript
           messages={messages}
           thinkingStatus={thinkingStatus}
+          recentSessions={recentSessions}
           className="flex-1"
         />
 

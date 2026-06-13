@@ -166,6 +166,24 @@ export const zh: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "新对话",
+    sessions: "会话",
+    searchSessions: "搜索会话",
+    searchPlaceholder: "搜索消息内容...",
+    renameSession: "重命名会话",
+    deleteSession: "删除会话",
+    untitledSession: "无标题会话",
+    liveSessions: "在线",
+    recentSessions: "最近",
+    noSessions: "暂无会话",
+    noMatch: "没有匹配的会话",
+    startConversation: "开始对话 — 消息会在此实时显示。",
+    showSessions: "显示会话",
+    hideSessions: "隐藏会话",
+    allSessions: "所有会话",
+  },
+
   analytics: {
     period: "时间范围：",
     totalTokens: "总 Token 数",

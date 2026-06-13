@@ -168,6 +168,25 @@ export const af: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "Nuwe klets",
+    sessions: "Sessies",
+    searchSessions: "Soek sessies",
+    searchPlaceholder: "Soek boodskap-inhoud...",
+    renameSession: "Hernoem sessie",
+    deleteSession: "Skrap sessie",
+    untitledSession: "Sessie sonder titel",
+    liveSessions: "Lewendig",
+    recentSessions: "Onlangs",
+    noSessions: "Nog geen sessies nie",
+    noMatch: "Geen ooreenstemmende sessies",
+    startConversation:
+      "Begin 'n gesprek — boodskappe stroom hier intyds.",
+    showSessions: "Wys sessies",
+    hideSessions: "Versteek sessies",
+    allSessions: "Alle sessies",
+  },
+
   analytics: {
     period: "Tydperk:",
     totalTokens: "Totale Tokens",

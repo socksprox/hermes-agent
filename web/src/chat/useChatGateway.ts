@@ -51,6 +51,8 @@ export function useChatGateway({
   const wantReconnectRef = useRef(true);
   const bootingRef = useRef(false);
   const storedIdRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const urlPersistedRef = useRef(false);
   const onHydratedRef = useRef(onHydrated);
   const onSessionInfoRef = useRef(onSessionInfo);
   const bindSessionRef = useRef<
@@ -59,6 +61,7 @@ export function useChatGateway({
 
   onHydratedRef.current = onHydrated;
   onSessionInfoRef.current = onSessionInfo;
+  sessionIdRef.current = sessionId;
 
   const gw = useMemo(
     () =>
@@ -106,6 +109,7 @@ export function useChatGateway({
         reconnectAttemptRef.current = 0;
 
         if (opts.resume && targetId) {
+          urlPersistedRef.current = true;
           const prefetch = api
             .getSessionMessages(targetId, profile)
             .catch(() => null);
@@ -144,6 +148,7 @@ export function useChatGateway({
             setSessionInfo((prev) => ({ ...prev, running: true }));
           }
         } else {
+          urlPersistedRef.current = false;
           const created = await gw.request<SessionCreateResponse>(
             "session.create",
             {
@@ -203,6 +208,18 @@ export function useChatGateway({
       if (ev.session_id) setSessionId(ev.session_id);
     });
 
+    const offComplete = gw.on("message.complete", () => {
+      if (urlPersistedRef.current || resumeParam) return;
+      const persistId = storedIdRef.current ?? sessionIdRef.current;
+      if (!persistId) return;
+      urlPersistedRef.current = true;
+      storedIdRef.current = persistId;
+      setStoredSessionId(persistId);
+      const next = new URLSearchParams(searchParams);
+      next.set("resume", persistId);
+      setSearchParams(next, { replace: true });
+    });
+
     void bindSession(resumeParam, { resume: !!resumeParam });
 
     return () => {
@@ -210,9 +227,10 @@ export function useChatGateway({
       clearReconnectTimer();
       offState();
       offInfo();
+      offComplete();
       gw.close();
     };
-  }, [gw, resumeParam, profile, bindSession, clearReconnectTimer]);
+  }, [gw, resumeParam, profile, bindSession, clearReconnectTimer, searchParams, setSearchParams]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>

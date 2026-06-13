@@ -175,6 +175,25 @@ export const en: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "New chat",
+    sessions: "Sessions",
+    searchSessions: "Search sessions",
+    searchPlaceholder: "Search message content…",
+    renameSession: "Rename session",
+    deleteSession: "Delete session",
+    untitledSession: "Untitled session",
+    liveSessions: "Live",
+    recentSessions: "Recent",
+    noSessions: "No sessions yet",
+    noMatch: "No matching sessions",
+    startConversation:
+      "Start a conversation — messages stream here in real time.",
+    showSessions: "Show sessions",
+    hideSessions: "Hide sessions",
+    allSessions: "All sessions",
+  },
+
   analytics: {
     period: "Period:",
     totalTokens: "Total Tokens",

@@ -168,6 +168,25 @@ export const ja: Translations = {
     },
   },
 
+  chatSession: {
+    newChat: "新しいチャット",
+    sessions: "セッション",
+    searchSessions: "セッションを検索",
+    searchPlaceholder: "メッセージ内容を検索...",
+    renameSession: "セッションの名前を変更",
+    deleteSession: "セッションを削除",
+    untitledSession: "無題のセッション",
+    liveSessions: "ライブ",
+    recentSessions: "最近",
+    noSessions: "まだセッションがありません",
+    noMatch: "一致するセッションがありません",
+    startConversation:
+      "会話を開始してください — メッセージはここにリアルタイムで表示されます。",
+    showSessions: "セッションを表示",
+    hideSessions: "セッションを非表示",
+    allSessions: "すべてのセッション",
+  },
+
   analytics: {
     period: "期間:",
     totalTokens: "合計トークン数",

@@ -3,9 +3,10 @@ import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 import { ChatRichView } from "@/chat/ChatRichView";
+import { ChatShell, type DashboardChatSurface } from "@/chat/ChatShell";
 import { ChatTerminalView } from "@/chat/ChatTerminalView";
 
-export type DashboardChatSurface = "rich" | "terminal";
+export type { DashboardChatSurface };
 
 export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   const [surface, setSurface] = useState<DashboardChatSurface>("rich");
@@ -40,9 +41,13 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     );
   }
 
-  return surface === "terminal" ? (
-    <ChatTerminalView isActive={isActive} />
-  ) : (
-    <ChatRichView isActive={isActive} />
+  return (
+    <ChatShell surface={surface} isActive={isActive}>
+      {surface === "terminal" ? (
+        <ChatTerminalView isActive={isActive} />
+      ) : (
+        <ChatRichView isActive={isActive} />
+      )}
+    </ChatShell>
   );
 }

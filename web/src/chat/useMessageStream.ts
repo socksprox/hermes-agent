@@ -19,6 +19,7 @@ export interface SessionInfo {
   cwd?: string;
   running?: boolean;
   credential_warning?: string;
+  title?: string;
 }
 
 interface UseMessageStreamOptions {
@@ -99,6 +100,7 @@ export function useMessageStream({
               provider: payload.provider ?? prev.provider,
               cwd: payload.cwd ?? prev.cwd,
               running: payload.running ?? prev.running,
+              title: payload.title ?? prev.title,
             }));
           }
           break;
