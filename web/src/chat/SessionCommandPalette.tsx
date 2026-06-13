@@ -34,17 +34,13 @@ export function SessionCommandPalette({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) {
       setQuery("");
       setResults([]);
       setSelectedIdx(0);
-      return;
     }
-    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
-    return () => window.clearTimeout(id);
   }, [open]);
 
   useEffect(() => {
@@ -112,7 +108,7 @@ export function SessionCommandPalette({ open, onClose }: Props) {
 
         <div className="border-b border-border/20 px-4 py-2">
           <Input
-            ref={inputRef}
+            autoFocus={open}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}

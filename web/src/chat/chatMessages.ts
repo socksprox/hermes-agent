@@ -75,6 +75,7 @@ export interface GatewayEventPayload {
   provider?: string;
   cwd?: string;
   running?: boolean;
+  title?: string;
 }
 
 let messageCounter = 0;
