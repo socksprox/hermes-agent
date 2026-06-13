@@ -327,7 +327,7 @@ export function ChatComposer({
               size="icon"
               disabled={!canType}
               onClick={() => fileInputRef.current?.click()}
-              className="shrink-0 rounded-full border border-border/40"
+              className="shrink-0 rounded-md border border-border/40"
               aria-label="Attach files"
               title="Attach files"
             >
@@ -340,7 +340,7 @@ export function ChatComposer({
               size="sm"
               disabled={!sessionId}
               onClick={() => setModelOpen(true)}
-              className="shrink-0 rounded-full border border-border/40 px-2.5 py-1 text-xs font-mono"
+              className="shrink-0 rounded-md border border-border/40 px-2.5 py-1 text-xs font-mono"
             >
               {modelShortName(model, provider)}
             </Button>
