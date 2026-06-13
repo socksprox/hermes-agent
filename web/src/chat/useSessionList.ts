@@ -68,21 +68,15 @@ export function useSessionList({
 
     let cancelled = false;
 
-    const connectAndRefresh = async () => {
-      try {
-        if (gw.state !== "open") {
-          await gw.connect();
-        }
-        if (!cancelled) await refresh();
-      } catch {
-        if (!cancelled) setError("Gateway not connected");
-      }
+    const tryRefresh = () => {
+      if (cancelled || gw.state !== "open") return;
+      void refresh();
     };
 
-    void connectAndRefresh();
+    tryRefresh();
 
     const offState = gw.onState((state) => {
-      if (state === "open") void refresh();
+      if (state === "open") tryRefresh();
     });
 
     const offComplete = gw.on("message.complete", () => {

@@ -99,6 +99,8 @@ export class GatewayClient {
   private readonly requestTimeoutMs: number;
   private readonly onDisconnect?: () => void;
   private intentionalClose = false;
+  /** Shared in-flight connect — concurrent callers must await the same attempt. */
+  private connectPromise: Promise<void> | null = null;
 
   constructor(options: GatewayClientOptions = {}) {
     this.connectTimeoutMs =
@@ -144,8 +146,17 @@ export class GatewayClient {
   }
 
   async connect(token?: string): Promise<void> {
-    if (this._state === "open" || this._state === "connecting") return;
+    if (this._state === "open") return;
+    if (this.connectPromise) return this.connectPromise;
+
     this.intentionalClose = false;
+    this.connectPromise = this.openConnection(token).finally(() => {
+      this.connectPromise = null;
+    });
+    return this.connectPromise;
+  }
+
+  private async openConnection(token?: string): Promise<void> {
     this.setState("connecting");
 
     const url = await buildWsUrl(token);

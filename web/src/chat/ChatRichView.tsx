@@ -15,7 +15,6 @@ import { useChatSession } from "./ChatSessionContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatTranscript } from "./ChatTranscript";
 import { PromptOverlays } from "./PromptOverlays";
-import { useSessionList } from "./useSessionList";
 import { useMessageQueue } from "./useMessageQueue";
 import { useMessageStream } from "./useMessageStream";
 
@@ -30,6 +29,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     request,
     startNewChat,
     registerOnHydrated,
+    sessionList,
   } = useChatSession();
 
   const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
@@ -39,12 +39,6 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   const drainingRef = useRef(false);
 
   const messageQueue = useMessageQueue();
-
-  const sessionList = useSessionList({
-    gw,
-    sessionId,
-    enabled: !!gw,
-  });
 
   const {
     messages,

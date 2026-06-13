@@ -106,6 +106,7 @@ function ChatShellRich({
     request: gateway.request,
     startNewChat: gateway.startNewChat,
     surface: "rich",
+    sessionList,
     registerOnHydrated,
   };
 
@@ -186,6 +187,7 @@ function ChatShellTerminal({
     request,
     startNewChat,
     surface: "terminal",
+    sessionList,
   };
 
   useGlobalPaletteShortcut(isActive, () => setPaletteOpen(true));

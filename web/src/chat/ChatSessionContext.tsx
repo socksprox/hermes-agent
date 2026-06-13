@@ -3,6 +3,7 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import type { ChatMessage } from "./chatMessages";
 import type { SessionInfo } from "./useMessageStream";
+import type { UseSessionListResult } from "./useSessionListTypes";
 
 export interface ChatSessionContextValue {
   gw: GatewayClient | null;
@@ -19,6 +20,7 @@ export interface ChatSessionContextValue {
   ) => Promise<T>;
   startNewChat: () => void;
   surface: "rich" | "terminal";
+  sessionList: UseSessionListResult;
   registerOnHydrated?: (fn: (messages: ChatMessage[]) => void) => () => void;
 }
 
