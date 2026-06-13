@@ -1,0 +1,102 @@
+name: Docker Build (manual)
+
+# Fork-friendly manual image builds. The upstream docker-publish.yml workflow
+# only runs on NousResearch/hermes-agent and has no workflow_dispatch; use
+# this to build/publish from a fork (or upstream) on demand.
+#
+# Publishes to GHCR: ghcr.io/<owner>/<repo>:<tag>
+# Pull: docker pull ghcr.io/socksprox/hermes-agent:latest
+#       (make the package public under GitHub → Packages → Package settings)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to publish
+        required: true
+        default: latest
+      push:
+        description: Push the image to GHCR after a successful smoke test
+        type: boolean
+        default: true
+      platform:
+        description: linux/amd64 for most PCs; linux/arm64 for ARM hosts
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+        default: linux/amd64
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-manual-${{ github.ref }}-${{ inputs.tag }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ inputs.platform }}
+    runs-on: ${{ inputs.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Resolve image name (GHCR requires lowercase)
+        run: |
+          repo_lc="$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+          echo "IMAGE=ghcr.io/${repo_lc}:${{ inputs.tag }}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Build image (load for smoke test)
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          platforms: ${{ inputs.platform }}
+          tags: ${{ env.IMAGE }}
+          build-args: |
+            HERMES_GIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=docker-manual-${{ inputs.platform }}
+          cache-to: type=gha,mode=max,scope=docker-manual-${{ inputs.platform }}
+
+      - name: Smoke test image
+        uses: ./.github/actions/hermes-smoke-test
+        with:
+          image: ${{ env.IMAGE }}
+
+      - name: Log in to GHCR
+        if: inputs.push
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        if: inputs.push
+        run: docker push "${IMAGE}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Docker build (manual)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Image** | \`${IMAGE}\` |"
+            echo "| **Platform** | \`${{ inputs.platform }}\` |"
+            echo "| **Commit** | \`${{ github.sha }}\` |"
+            echo "| **Pushed** | \`${{ inputs.push }}\` |"
+            if [ "${{ inputs.push }}" = "true" ]; then
+              echo ""
+              echo '```bash'
+              echo "docker pull ${IMAGE}"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
