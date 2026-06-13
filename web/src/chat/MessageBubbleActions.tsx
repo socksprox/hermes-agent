@@ -38,38 +38,38 @@ export function MessageBubbleActions({
   return (
     <div
       className={cn(
-        "flex gap-0.5 pt-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+        "flex items-center gap-0.5 pt-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
         align === "end" ? "justify-end" : "justify-start",
       )}
     >
       <Button
         type="button"
-        size="sm"
         ghost
-        className="h-7 w-7 p-0 text-text-tertiary hover:text-foreground"
+        size="icon"
+        className="h-7 w-7 shrink-0 text-text-tertiary hover:text-foreground"
         disabled={!canCopy}
         aria-label={copied ? t.chatSession.copied : t.chatSession.copyMessage}
         title={copied ? t.chatSession.copied : t.chatSession.copyMessage}
         onClick={handleCopy}
       >
         {copied ? (
-          <Check className="h-3.5 w-3.5" aria-hidden />
+          <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
         ) : (
-          <Copy className="h-3.5 w-3.5" aria-hidden />
+          <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
         )}
       </Button>
       {onFork && (
         <Button
           type="button"
-          size="sm"
           ghost
-          className="h-7 w-7 p-0 text-text-tertiary hover:text-foreground"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-text-tertiary hover:text-foreground"
           disabled={forking || !canCopy}
           aria-label={t.chatSession.forkMessage}
           title={t.chatSession.forkMessage}
           onClick={onFork}
         >
-          <GitBranch className="h-3.5 w-3.5" aria-hidden />
+          <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Button>
       )}
     </div>

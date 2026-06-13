@@ -48,6 +48,8 @@ function reconnectDelayMs(attempt: number): number {
 
 export interface UseChatGatewayOptions {
   profile: string;
+  /** When false, defer session.create/resume until the user opens /chat. */
+  isActive?: boolean;
   onHydrated?: (messages: ChatMessage[]) => void;
   onSessionInfo?: (info: SessionInfo) => void;
 }
@@ -68,6 +70,7 @@ function hydrateSessionMessages(
 
 export function useChatGateway({
   profile,
+  isActive = true,
   onHydrated,
   onSessionInfo,
 }: UseChatGatewayOptions) {
@@ -372,7 +375,12 @@ export function useChatGateway({
   }, [gw, clearReconnectTimer, syncResumeUrl]);
 
   // Session bind — URL deep-links and cold resumes; must not close the socket.
+  // Deferred until /chat is active so sidebar navigation (which keeps ChatPage
+  // mounted but hidden) actually creates a session on first open — matching a
+  // full reload at /chat.
   useEffect(() => {
+    if (!isActive) return;
+
     if (suppressResumeBindRef.current) {
       if (resumeParam) {
         // Gateway/version may update before ?resume= clears; do not re-bind yet.
@@ -380,6 +388,11 @@ export function useChatGateway({
       }
       suppressResumeBindRef.current = false;
       void bindSession(null, { resume: false });
+      return;
+    }
+
+    // Live session with no ?resume= — keep it when returning from another tab.
+    if (!resumeParam && sessionIdRef.current && gw.state === "open") {
       return;
     }
 
@@ -394,7 +407,7 @@ export function useChatGateway({
     } else {
       setError(null);
     }
-  }, [gw, resumeParam, profile, bindSession]);
+  }, [gw, resumeParam, profile, bindSession, isActive]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>

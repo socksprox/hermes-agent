@@ -112,6 +112,7 @@ function RichSessionProvider({
 
   const gateway = useChatGateway({
     profile,
+    isActive,
     onHydrated: (messages) => {
       for (const fn of hydrateListenersRef.current) {
         fn(messages);
