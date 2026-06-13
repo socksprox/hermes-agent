@@ -185,6 +185,7 @@ export const ru: Translations = {
     showSessions: "Показать сессии",
     hideSessions: "Скрыть сессии",
     allSessions: "Все сессии",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

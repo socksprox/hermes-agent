@@ -185,6 +185,7 @@ export const uk: Translations = {
     showSessions: "Показати сесії",
     hideSessions: "Приховати сесії",
     allSessions: "Усі сесії",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

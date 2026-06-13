@@ -15,6 +15,7 @@ import {
   Navigate,
   useLocation,
   useNavigate,
+  useMatch,
 } from "react-router-dom";
 import {
   Activity,
@@ -91,9 +92,8 @@ import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
 import {
   DashboardChatSessionProvider,
-  useDashboardChatSurface,
 } from "@/chat/DashboardChatSessionProvider";
-import { SessionListPanel } from "@/chat/SessionListPanel";
+import { ChatSidebarSessionsView } from "@/chat/ChatSidebarSessionsView";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -478,6 +478,34 @@ export default function App() {
 
   const chatSessionHost = embeddedChat && !chatOverriddenByPlugin;
 
+  const [chatSidebarDrilled, setChatSidebarDrilled] = useState(false);
+  const prevPathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    const prevNorm = prevPathnameRef.current.replace(/\/$/, "") || "/";
+    const wasChat = prevNorm === "/chat";
+    prevPathnameRef.current = pathname;
+
+    if (!isChatRoute) {
+      setChatSidebarDrilled(false);
+      return;
+    }
+
+    if (!wasChat && isChatRoute && chatSessionHost && !isDesktopCollapsed) {
+      setChatSidebarDrilled(true);
+    }
+  }, [pathname, isChatRoute, chatSessionHost, isDesktopCollapsed]);
+
+  const showChatSessionsSidebar =
+    chatSessionHost &&
+    isChatRoute &&
+    chatSidebarDrilled &&
+    !isDesktopCollapsed;
+
+  const openChatSidebar = useCallback(() => {
+    setChatSidebarDrilled(true);
+  }, []);
+
   const wrapChatSessionProvider = (children: ReactNode) =>
     chatSessionHost ? (
       <DashboardChatSessionProvider isActive={isChatRoute}>
@@ -619,49 +647,30 @@ export default function App() {
               </Button>
             </div>
 
-            <ProfileSwitcher collapsed={isDesktopCollapsed} />
+            {!showChatSessionsSidebar && (
+              <ProfileSwitcher collapsed={isDesktopCollapsed} />
+            )}
 
-            <nav
+            <div
               className={cn(
-                "min-h-0 w-full overflow-x-hidden border-t border-current/10 py-2",
-                chatSessionHost && isChatRoute
-                  ? "shrink-0"
+                "flex min-h-0 w-full flex-col border-t border-current/10",
+                showChatSessionsSidebar
+                  ? "min-h-0 flex-1 overflow-hidden"
                   : "flex-1 overflow-y-auto",
               )}
-              aria-label={t.app.navigation}
             >
-              <ul className="flex flex-col">
-                {sidebarNav.coreItems.map((item) => (
-                  <SidebarNavLink
-                    closeMobile={closeMobile}
-                    collapsed={isDesktopCollapsed}
-                    item={item}
-                    key={item.path}
-                    t={t}
-                    tooltipWarmRef={tooltipWarmRef}
-                  />
-                ))}
-              </ul>
-
-              {sidebarNav.pluginItems.length > 0 && (
-                <div
-                  aria-labelledby="hermes-sidebar-plugin-nav-heading"
-                  className="flex flex-col border-t border-current/10 pb-2"
-                  role="group"
+              {showChatSessionsSidebar ? (
+                <ChatSidebarSessionsView
+                  onBack={() => setChatSidebarDrilled(false)}
+                  closeMobile={closeMobile}
+                />
+              ) : (
+                <nav
+                  className="w-full overflow-x-hidden py-2"
+                  aria-label={t.app.navigation}
                 >
-                  <span
-                    className={cn(
-                      "px-5 pt-2.5 pb-1",
-                      "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
-                      isDesktopCollapsed && "lg:hidden",
-                    )}
-                    id="hermes-sidebar-plugin-nav-heading"
-                  >
-                    {t.app.pluginNavSection}
-                  </span>
-
                   <ul className="flex flex-col">
-                    {sidebarNav.pluginItems.map((item) => (
+                    {sidebarNav.coreItems.map((item) => (
                       <SidebarNavLink
                         closeMobile={closeMobile}
                         collapsed={isDesktopCollapsed}
@@ -669,17 +678,52 @@ export default function App() {
                         key={item.path}
                         t={t}
                         tooltipWarmRef={tooltipWarmRef}
+                        onActiveClick={
+                          item.path === "/chat" && chatSessionHost
+                            ? openChatSidebar
+                            : undefined
+                        }
                       />
                     ))}
                   </ul>
-                </div>
+
+                  {sidebarNav.pluginItems.length > 0 && (
+                    <div
+                      aria-labelledby="hermes-sidebar-plugin-nav-heading"
+                      className="flex flex-col border-t border-current/10 pb-2"
+                      role="group"
+                    >
+                      <span
+                        className={cn(
+                          "px-5 pt-2.5 pb-1",
+                          "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
+                          isDesktopCollapsed && "lg:hidden",
+                        )}
+                        id="hermes-sidebar-plugin-nav-heading"
+                      >
+                        {t.app.pluginNavSection}
+                      </span>
+
+                      <ul className="flex flex-col">
+                        {sidebarNav.pluginItems.map((item) => (
+                          <SidebarNavLink
+                            closeMobile={closeMobile}
+                            collapsed={isDesktopCollapsed}
+                            item={item}
+                            key={item.path}
+                            t={t}
+                            tooltipWarmRef={tooltipWarmRef}
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </nav>
               )}
-            </nav>
+            </div>
 
-            {chatSessionHost && isChatRoute && !isDesktopCollapsed && (
-              <ChatSessionSidebarRail />
-            )}
-
+            {!showChatSessionsSidebar && (
+              <>
             <SidebarSystemActions
               collapsed={isDesktopCollapsed}
               onNavigate={closeMobile}
@@ -732,6 +776,8 @@ export default function App() {
               <AuthWidget />
               <SidebarFooter status={sidebarStatus} />
             </div>
+              </>
+            )}
           </aside>
 
           <PageHeaderProvider pluginTabs={pluginTabMeta}>
@@ -820,14 +866,6 @@ export default function App() {
  * the new scope. The persistent ChatPage host below handles its own
  * remount (channel keyed on scopedProfile).
  */
-function ChatSessionSidebarRail() {
-  const surface = useDashboardChatSurface();
-  if (!surface) return null;
-  return (
-    <SessionListPanel className="min-h-0 flex-1 border-t border-current/10" />
-  );
-}
-
 function ProfileKeyedRoutes({ children }: { children: ReactNode }) {
   const { profile } = useProfileScope();
   return <div key={profile || "__own__"} className="contents">{children}</div>;
@@ -837,12 +875,14 @@ function SidebarNavLink({
   closeMobile,
   collapsed,
   item,
+  onActiveClick,
   tooltipWarmRef,
   t,
 }: SidebarNavLinkProps) {
   const { path, label, labelKey, icon: Icon } = item;
   const liRef = useRef<HTMLLIElement>(null);
   const [hovered, setHovered] = useState(false);
+  const routeActive = useMatch({ path, end: path === "/chat" }) != null;
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
@@ -857,7 +897,13 @@ function SidebarNavLink({
       <NavLink
         to={path}
         end={path === "/chat"}
-        onClick={closeMobile}
+        onClick={(e) => {
+          if (routeActive && onActiveClick) {
+            e.preventDefault();
+            onActiveClick();
+          }
+          closeMobile();
+        }}
         aria-label={collapsed ? navLabel : undefined}
         onFocus={collapsed ? () => setHovered(true) : undefined}
         onBlur={collapsed ? () => setHovered(false) : undefined}
@@ -1220,6 +1266,7 @@ interface SidebarNavLinkProps {
   closeMobile: () => void;
   collapsed: boolean;
   item: NavItem;
+  onActiveClick?: () => void;
   t: Translations;
   tooltipWarmRef: TooltipWarmRef;
 }

@@ -185,6 +185,7 @@ export const tr: Translations = {
     showSessions: "Oturumları göster",
     hideSessions: "Oturumları gizle",
     allSessions: "Tüm oturumlar",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

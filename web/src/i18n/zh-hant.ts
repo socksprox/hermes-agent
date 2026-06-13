@@ -184,6 +184,7 @@ export const zhHant: Translations = {
     showSessions: "顯示工作階段",
     hideSessions: "隱藏工作階段",
     allSessions: "所有工作階段",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

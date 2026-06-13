@@ -185,6 +185,7 @@ export const ko: Translations = {
     showSessions: "세션 표시",
     hideSessions: "세션 숨기기",
     allSessions: "모든 세션",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

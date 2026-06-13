@@ -208,6 +208,7 @@ export interface Translations {
     showSessions: string;
     hideSessions: string;
     allSessions: string;
+    backToNav: string;
   };
 
   // ── Analytics page ──

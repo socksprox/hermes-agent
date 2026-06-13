@@ -185,6 +185,7 @@ export const af: Translations = {
     showSessions: "Wys sessies",
     hideSessions: "Versteek sessies",
     allSessions: "Alle sessies",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

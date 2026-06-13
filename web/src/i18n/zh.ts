@@ -182,6 +182,7 @@ export const zh: Translations = {
     showSessions: "显示会话",
     hideSessions: "隐藏会话",
     allSessions: "所有会话",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

@@ -185,6 +185,7 @@ export const fr: Translations = {
     showSessions: "Afficher les sessions",
     hideSessions: "Masquer les sessions",
     allSessions: "Toutes les sessions",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

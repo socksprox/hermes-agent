@@ -185,6 +185,7 @@ export const ja: Translations = {
     showSessions: "セッションを表示",
     hideSessions: "セッションを非表示",
     allSessions: "すべてのセッション",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

@@ -185,6 +185,7 @@ export const it: Translations = {
     showSessions: "Mostra sessioni",
     hideSessions: "Nascondi sessioni",
     allSessions: "Tutte le sessioni",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

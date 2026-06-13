@@ -192,6 +192,7 @@ export const en: Translations = {
     showSessions: "Show sessions",
     hideSessions: "Hide sessions",
     allSessions: "All sessions",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

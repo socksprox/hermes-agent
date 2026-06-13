@@ -185,6 +185,7 @@ export const ga: Translations = {
     showSessions: "Taispeáin seisiúin",
     hideSessions: "Folaigh seisiúin",
     allSessions: "Gach seisiún",
+    backToNav: "Back to navigation",
   },
 
   analytics: {

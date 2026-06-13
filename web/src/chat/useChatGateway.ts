@@ -219,9 +219,14 @@ export function useChatGateway({
       urlPersistedRef.current = true;
       setStoredSessionId(persistId);
       persistUrlSyncRef.current = true;
-      const next = new URLSearchParams(searchParams);
-      next.set("resume", persistId);
-      setSearchParams(next, { replace: true });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("resume", persistId);
+          return next;
+        },
+        { replace: true },
+      );
     });
 
     const alreadyOnThisSession =
@@ -248,7 +253,7 @@ export function useChatGateway({
       }
       gw.close();
     };
-  }, [gw, resumeParam, profile, bindSession, clearReconnectTimer, searchParams, setSearchParams]);
+  }, [gw, resumeParam, profile, bindSession, clearReconnectTimer, setSearchParams]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>
@@ -263,11 +268,30 @@ export function useChatGateway({
   }, [gw, sessionId]);
 
   const startNewChat = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("resume");
-    setSearchParams(next, { replace: true });
+    wantReconnectRef.current = false;
+    clearReconnectTimer();
+    bootingRef.current = false;
+    urlPersistedRef.current = false;
+    persistUrlSyncRef.current = false;
+    storedIdRef.current = null;
+    sessionIdRef.current = null;
+    reconnectAttemptRef.current = 0;
+    setSessionId(null);
+    setStoredSessionId(null);
+    setSessionInfo({});
+    setSessionEnded(false);
+    setError(null);
+    onHydratedRef.current?.([]);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("resume");
+        return next;
+      },
+      { replace: true },
+    );
     setVersion((v) => v + 1);
-  }, [searchParams, setSearchParams]);
+  }, [clearReconnectTimer, setSearchParams]);
 
   return {
     gw,

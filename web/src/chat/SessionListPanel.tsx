@@ -10,7 +10,6 @@ import {
   MessageCircle,
   MessageSquare,
   Pencil,
-  Plus,
   Terminal,
   Trash2,
   X,
@@ -38,6 +37,12 @@ const SOURCE_ICONS: Record<string, LucideIcon> = {
 
 interface Props {
   className?: string;
+  /** When false, omit the inline “New chat” row (use header + instead). */
+  showNewChat?: boolean;
+  /** When false, omit the “Sessions” section title row. */
+  showTitle?: boolean;
+  /** Called after picking a session (e.g. close mobile drawer). */
+  onSessionSelect?: () => void;
 }
 
 function SourceIcon({ source }: { source?: string }) {
@@ -227,7 +232,12 @@ function HistoryRow({
   );
 }
 
-export function SessionListPanel({ className }: Props) {
+export function SessionListPanel({
+  className,
+  showNewChat = true,
+  showTitle = true,
+  onSessionSelect,
+}: Props) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -241,8 +251,9 @@ export function SessionListPanel({ className }: Props) {
       const next = new URLSearchParams(searchParams);
       next.set("resume", id);
       navigate(`/chat?${next.toString()}`);
+      onSessionSelect?.();
     },
-    [navigate, searchParams],
+    [navigate, onSessionSelect, searchParams],
   );
 
   const handleRename = useCallback(
@@ -270,18 +281,27 @@ export function SessionListPanel({ className }: Props) {
       aria-label={t.chatSession.sessions}
       className={cn("flex min-h-0 flex-col", className)}
     >
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-          {t.chatSession.sessions}
-        </span>
-        {loading && <Spinner className="h-3.5 w-3.5" />}
-      </div>
+      {showTitle && (
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+            {t.chatSession.sessions}
+          </span>
+          {loading && <Spinner className="h-3.5 w-3.5" />}
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-2">
-        <SessionRowButton onClick={startNewChat}>
-          <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="font-medium">{t.chatSession.newChat}</span>
-        </SessionRowButton>
+        {!showTitle && loading && (
+          <div className="flex justify-end px-1 py-1">
+            <Spinner className="h-3.5 w-3.5" />
+          </div>
+        )}
+
+        {showNewChat && (
+          <SessionRowButton onClick={startNewChat}>
+            <span className="font-medium">{t.chatSession.newChat}</span>
+          </SessionRowButton>
+        )}
 
         {error && (
           <p className="px-2 py-1 text-xs text-destructive">{error}</p>

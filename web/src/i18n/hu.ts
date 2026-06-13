@@ -185,6 +185,7 @@ export const hu: Translations = {
     showSessions: "Munkamenetek megjelenítése",
     hideSessions: "Munkamenetek elrejtése",
     allSessions: "Összes munkamenet",
+    backToNav: "Back to navigation",
   },
 
   analytics: {
