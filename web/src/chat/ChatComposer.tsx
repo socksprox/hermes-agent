@@ -2,7 +2,7 @@ import type { GatewayClient } from "@/lib/gatewayClient";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Loader2, Paperclip, Send, Square } from "lucide-react";
+import { Loader2, Plus, Send, Square } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -293,7 +293,25 @@ export function ChatComposer({
             onRemove={(id) => void remove(id)}
           />
 
-          <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder={
+              running
+                ? "Queue a message… (/ for commands)"
+                : "Message Hermes… (/ for commands)"
+            }
+            disabled={!canType}
+            className={cn(
+              "w-full min-h-[2.25rem] max-h-40 resize-none bg-transparent",
+              "text-sm outline-none placeholder:text-text-tertiary",
+            )}
+          />
+
+          <div className="mt-2 flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -309,11 +327,11 @@ export function ChatComposer({
               size="icon"
               disabled={!canType}
               onClick={() => fileInputRef.current?.click()}
-              className="shrink-0"
+              className="shrink-0 rounded-full border border-border/40"
               aria-label="Attach files"
               title="Attach files"
             >
-              <Paperclip className="h-4 w-4" />
+              <Plus className="h-4 w-4" />
             </Button>
 
             <Button
@@ -327,23 +345,7 @@ export function ChatComposer({
               {modelShortName(model, provider)}
             </Button>
 
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              rows={1}
-              placeholder={
-                running
-                  ? "Queue a message… (/ for commands)"
-                  : "Message Hermes… (/ for commands)"
-              }
-              disabled={!canType}
-              className={cn(
-                "min-h-[2.25rem] max-h-40 flex-1 resize-none bg-transparent",
-                "text-sm outline-none placeholder:text-text-tertiary",
-              )}
-            />
+            <div className="flex-1" />
 
             {isRunning && (
               <Button
