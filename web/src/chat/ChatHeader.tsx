@@ -1,14 +1,6 @@
 import { Button } from "@nous-research/ui/ui/components/button";
 import { cn } from "@/lib/utils";
-import {
-  Command,
-  ExternalLink,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-  Search,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { Command, Plus, Search } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { modelShortName } from "./modelPickerCore";
@@ -17,8 +9,6 @@ import type { SessionInfo } from "./useMessageStream";
 interface Props {
   title?: string;
   sessionInfo: SessionInfo;
-  drawerOpen: boolean;
-  onToggleDrawer: () => void;
   onNewChat: () => void;
   onOpenPalette: () => void;
 }
@@ -26,8 +16,6 @@ interface Props {
 export function ChatHeader({
   title,
   sessionInfo,
-  drawerOpen,
-  onToggleDrawer,
   onNewChat,
   onOpenPalette,
 }: Props) {
@@ -38,30 +26,6 @@ export function ChatHeader({
 
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/30 bg-background-base/80 px-3 py-2 backdrop-blur-sm">
-      <Button
-        type="button"
-        ghost
-        size="icon"
-        className="shrink-0"
-        onClick={onToggleDrawer}
-        aria-label={
-          drawerOpen
-            ? t.chatSession.hideSessions
-            : t.chatSession.showSessions
-        }
-        title={
-          drawerOpen
-            ? t.chatSession.hideSessions
-            : t.chatSession.showSessions
-        }
-      >
-        {drawerOpen ? (
-          <PanelLeftClose className="h-4 w-4" />
-        ) : (
-          <PanelLeftOpen className="h-4 w-4" />
-        )}
-      </Button>
-
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{displayTitle}</p>
         {modelLabel && (
@@ -105,15 +69,6 @@ export function ChatHeader({
         >
           <Plus className="h-4 w-4" />
         </Button>
-
-        <Link
-          to="/sessions"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-          aria-label={t.chatSession.allSessions}
-          title={t.chatSession.allSessions}
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Link>
       </div>
     </div>
   );

@@ -29,7 +29,6 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     request,
     startNewChat,
     registerOnHydrated,
-    sessionList,
   } = useChatSession();
 
   const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
@@ -172,8 +171,6 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when session changes
   }, [sessionId]);
 
-  const recentSessions = sessionList.history.slice(0, 5);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <PluginSlot name="chat:top" />
@@ -199,7 +196,6 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
         <ChatTranscript
           messages={messages}
           thinkingStatus={thinkingStatus}
-          recentSessions={recentSessions}
           className="flex-1"
         />
 

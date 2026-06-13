@@ -22,6 +22,8 @@ export interface ChatSessionContextValue {
   surface: "rich" | "terminal";
   sessionList: UseSessionListResult;
   registerOnHydrated?: (fn: (messages: ChatMessage[]) => void) => () => void;
+  openSessionPalette?: () => void;
+  chatTitle?: string;
 }
 
 const ChatSessionContext = createContext<ChatSessionContextValue | null>(null);

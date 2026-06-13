@@ -1,53 +1,25 @@
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { api } from "@/lib/api";
-import { useEffect, useState } from "react";
-
 import { ChatRichView } from "@/chat/ChatRichView";
-import { ChatShell, type DashboardChatSurface } from "@/chat/ChatShell";
+import { ChatShell } from "@/chat/ChatShell";
 import { ChatTerminalView } from "@/chat/ChatTerminalView";
+import {
+  DashboardChatSurfaceGate,
+  useDashboardChatSurface,
+} from "@/chat/DashboardChatSessionProvider";
 
-export type { DashboardChatSurface };
+export type { DashboardChatSurface } from "@/chat/DashboardChatSessionProvider";
 
 export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
-  const [surface, setSurface] = useState<DashboardChatSurface>("rich");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getConfig()
-      .then((cfg) => {
-        if (cancelled) return;
-        const raw = (cfg.display as { dashboard_chat_surface?: string } | undefined)
-          ?.dashboard_chat_surface;
-        setSurface(raw === "terminal" ? "terminal" : "rich");
-      })
-      .catch(() => {
-        if (!cancelled) setSurface("rich");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-8">
-        <Spinner />
-      </div>
-    );
-  }
+  const surface = useDashboardChatSurface();
 
   return (
-    <ChatShell surface={surface} isActive={isActive}>
-      {surface === "terminal" ? (
-        <ChatTerminalView isActive={isActive} />
-      ) : (
-        <ChatRichView isActive={isActive} />
-      )}
-    </ChatShell>
+    <DashboardChatSurfaceGate>
+      <ChatShell>
+        {surface === "terminal" ? (
+          <ChatTerminalView isActive={isActive} />
+        ) : (
+          <ChatRichView isActive={isActive} />
+        )}
+      </ChatShell>
+    </DashboardChatSurfaceGate>
   );
 }

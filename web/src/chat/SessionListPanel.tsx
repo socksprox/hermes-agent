@@ -5,6 +5,7 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
 import {
   Check,
+  ExternalLink,
   Globe,
   MessageCircle,
   MessageSquare,
@@ -16,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useI18n } from "@/i18n";
 import { useProfileScope } from "@/contexts/useProfileScope";
@@ -28,7 +29,6 @@ import {
   type SessionActiveItem,
   type SessionListItem,
 } from "./sessionListCore";
-import type { UseSessionListResult } from "./useSessionListTypes";
 
 const SOURCE_ICONS: Record<string, LucideIcon> = {
   cli: Terminal,
@@ -37,8 +37,6 @@ const SOURCE_ICONS: Record<string, LucideIcon> = {
 };
 
 interface Props {
-  open: boolean;
-  sessionList: UseSessionListResult;
   className?: string;
 }
 
@@ -229,14 +227,13 @@ function HistoryRow({
   );
 }
 
-export function ChatSessionDrawer({ open, sessionList, className }: Props) {
+export function SessionListPanel({ className }: Props) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useProfileScope();
-  const { gw, startNewChat } = useChatSession();
+  const { gw, startNewChat, sessionList } = useChatSession();
   const resumeId = searchParams.get("resume");
-
   const { live, history, loading, error, refresh } = sessionList;
 
   const resumeSession = useCallback(
@@ -268,23 +265,19 @@ export function ChatSessionDrawer({ open, sessionList, className }: Props) {
     [gw, refresh, resumeId, startNewChat],
   );
 
-  if (!open) return null;
-
   return (
-    <aside
-      className={cn(
-        "flex w-64 shrink-0 flex-col border-r border-border/30 bg-background-base/60",
-        className,
-      )}
+    <section
+      aria-label={t.chatSession.sessions}
+      className={cn("flex min-h-0 flex-col", className)}
     >
-      <div className="flex items-center justify-between border-b border-border/20 px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-2">
         <span className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
           {t.chatSession.sessions}
         </span>
         {loading && <Spinner className="h-3.5 w-3.5" />}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-2">
         <SessionRowButton onClick={startNewChat}>
           <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="font-medium">{t.chatSession.newChat}</span>
@@ -334,6 +327,16 @@ export function ChatSessionDrawer({ open, sessionList, className }: Props) {
           </p>
         )}
       </div>
-    </aside>
+
+      <div className="shrink-0 border-t border-current/10 px-2 py-2">
+        <Link
+          to="/sessions"
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-muted/30 hover:text-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          <span>{t.chatSession.allSessions}</span>
+        </Link>
+      </div>
+    </section>
   );
 }

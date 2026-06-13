@@ -89,6 +89,11 @@ import ChannelsPage from "@/pages/ChannelsPage";
 import WebhooksPage from "@/pages/WebhooksPage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
+import {
+  DashboardChatSessionProvider,
+  useDashboardChatSurface,
+} from "@/chat/DashboardChatSessionProvider";
+import { SessionListPanel } from "@/chat/SessionListPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -101,7 +106,7 @@ import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 
 function RootRedirect() {
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/chat" replace />;
 }
 
 function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
@@ -109,7 +114,7 @@ function UnknownRouteFallback({ pluginsLoading }: { pluginsLoading: boolean }) {
     // Render nothing during the plugin-load window — a spinner here would just flash.
     return null;
   }
-  return <Navigate to="/sessions" replace />;
+  return <Navigate to="/chat" replace />;
 }
 
 const CHAT_NAV_ITEM: NavItem = {
@@ -159,12 +164,6 @@ function ChatRouteSink() {
 }
 
 const BUILTIN_NAV_REST: NavItem[] = [
-  {
-    path: "/sessions",
-    labelKey: "sessions",
-    label: "Sessions",
-    icon: MessageSquare,
-  },
   { path: "/files", label: "Files", icon: FolderOpen },
   {
     path: "/analytics",
@@ -477,6 +476,17 @@ export default function App() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
+  const chatSessionHost = embeddedChat && !chatOverriddenByPlugin;
+
+  const wrapChatSessionProvider = (children: ReactNode) =>
+    chatSessionHost ? (
+      <DashboardChatSessionProvider isActive={isChatRoute}>
+        {children}
+      </DashboardChatSessionProvider>
+    ) : (
+      children
+    );
+
   return (
     <ProfileProvider>
     <div
@@ -536,6 +546,7 @@ export default function App() {
       <ProfileScopeBanner />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pt-14 lg:pt-0">
+        {wrapChatSessionProvider(
         <div className="flex min-h-0 min-w-0 flex-1">
           <aside
             id="app-sidebar"
@@ -611,7 +622,12 @@ export default function App() {
             <ProfileSwitcher collapsed={isDesktopCollapsed} />
 
             <nav
-              className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden border-t border-current/10 py-2"
+              className={cn(
+                "min-h-0 w-full overflow-x-hidden border-t border-current/10 py-2",
+                chatSessionHost && isChatRoute
+                  ? "shrink-0"
+                  : "flex-1 overflow-y-auto",
+              )}
               aria-label={t.app.navigation}
             >
               <ul className="flex flex-col">
@@ -659,6 +675,10 @@ export default function App() {
                 </div>
               )}
             </nav>
+
+            {chatSessionHost && isChatRoute && !isDesktopCollapsed && (
+              <ChatSessionSidebarRail />
+            )}
 
             <SidebarSystemActions
               collapsed={isDesktopCollapsed}
@@ -781,6 +801,7 @@ export default function App() {
             </div>
           </PageHeaderProvider>
         </div>
+        )}
       </div>
 
       <PluginSlot name="overlay" />
@@ -799,6 +820,14 @@ export default function App() {
  * the new scope. The persistent ChatPage host below handles its own
  * remount (channel keyed on scopedProfile).
  */
+function ChatSessionSidebarRail() {
+  const surface = useDashboardChatSurface();
+  if (!surface) return null;
+  return (
+    <SessionListPanel className="min-h-0 flex-1 border-t border-current/10" />
+  );
+}
+
 function ProfileKeyedRoutes({ children }: { children: ReactNode }) {
   const { profile } = useProfileScope();
   return <div key={profile || "__own__"} className="contents">{children}</div>;
@@ -827,7 +856,7 @@ function SidebarNavLink({
     >
       <NavLink
         to={path}
-        end={path === "/sessions"}
+        end={path === "/chat"}
         onClick={closeMobile}
         aria-label={collapsed ? navLabel : undefined}
         onFocus={collapsed ? () => setHovered(true) : undefined}

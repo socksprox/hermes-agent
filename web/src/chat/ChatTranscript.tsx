@@ -9,21 +9,14 @@ import {
   FileText,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useI18n } from "@/i18n";
 
 import type { ChatMessage } from "./chatMessages";
-import {
-  relativeSessionAge,
-  sessionDisplayTitle,
-  type SessionListItem,
-} from "./sessionListCore";
 
 interface Props {
   messages: ChatMessage[];
   thinkingStatus?: string | null;
-  recentSessions?: SessionListItem[];
   className?: string;
 }
 
@@ -73,12 +66,9 @@ function scrollHostToBottom(el: HTMLDivElement) {
 export function ChatTranscript({
   messages,
   thinkingStatus,
-  recentSessions = [],
   className,
 }: Props) {
   const { t } = useI18n();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [nearBottom, setNearBottom] = useState(true);
@@ -116,15 +106,6 @@ export function ChatTranscript({
 
   const showJumpToBottom = !nearBottom && isStreaming;
 
-  const resumeSession = useCallback(
-    (id: string) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("resume", id);
-      navigate(`/chat?${next.toString()}`);
-    },
-    [navigate, searchParams],
-  );
-
   if (messages.length === 0) {
     return (
       <div
@@ -134,35 +115,6 @@ export function ChatTranscript({
         )}
       >
         <p>{t.chatSession.startConversation}</p>
-        {recentSessions.length > 0 && (
-          <div className="w-full max-w-md text-left">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-tertiary">
-              {t.chatSession.recentSessions}
-            </p>
-            <div className="flex flex-col gap-1">
-              {recentSessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  onClick={() => resumeSession(session.id)}
-                  className="rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/30"
-                >
-                  <span className="block truncate font-medium text-foreground">
-                    {sessionDisplayTitle(
-                      session.title,
-                      session.preview,
-                      t.chatSession.untitledSession,
-                    )}
-                  </span>
-                  <span className="block truncate text-xs text-text-tertiary">
-                    {session.source ?? "local"} ·{" "}
-                    {relativeSessionAge(session.started_at)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
