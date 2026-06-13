@@ -9,7 +9,6 @@ export function ChatShell({ children }: Props) {
   const {
     sessionInfo,
     startNewChat,
-    openSessionPalette,
     chatTitle,
   } = useChatSession();
 
@@ -19,7 +18,6 @@ export function ChatShell({ children }: Props) {
         title={chatTitle}
         sessionInfo={sessionInfo}
         onNewChat={startNewChat}
-        onOpenPalette={() => openSessionPalette?.()}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
     </div>

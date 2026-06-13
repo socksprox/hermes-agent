@@ -1,7 +1,7 @@
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft, Plus, Search } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 
@@ -64,6 +64,18 @@ export function ChatSidebarSessionsView({
         <span className="min-w-0 flex-1 truncate px-1 font-mondwest text-display text-sm uppercase tracking-[0.12em] text-midground">
           {chatLabel}
         </span>
+
+        <Button
+          type="button"
+          ghost
+          size="icon"
+          onClick={() => session.openSessionPalette?.()}
+          aria-label={t.chatSession.searchSessions}
+          title={`${t.chatSession.searchSessions} (⌘K)`}
+          className="shrink-0 text-text-secondary hover:text-midground"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
 
         <Button
           type="button"

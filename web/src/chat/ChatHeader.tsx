@@ -1,6 +1,5 @@
 import { Button } from "@nous-research/ui/ui/components/button";
-import { cn } from "@/lib/utils";
-import { Command, Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { modelShortName } from "./modelPickerCore";
@@ -10,14 +9,12 @@ interface Props {
   title?: string;
   sessionInfo: SessionInfo;
   onNewChat: () => void;
-  onOpenPalette: () => void;
 }
 
 export function ChatHeader({
   title,
   sessionInfo,
   onNewChat,
-  onOpenPalette,
 }: Props) {
   const { t } = useI18n();
   const displayTitle =
@@ -37,17 +34,6 @@ export function ChatHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <Button
-          type="button"
-          ghost
-          size="icon"
-          onClick={onOpenPalette}
-          aria-label={t.chatSession.searchSessions}
-          title={`${t.chatSession.searchSessions} (⌘K)`}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-
         <Button
           type="button"
           ghost
@@ -71,19 +57,5 @@ export function ChatHeader({
         </Button>
       </div>
     </div>
-  );
-}
-
-export function ChatHeaderHint({ className }: { className?: string }) {
-  const { t } = useI18n();
-  return (
-    <p
-      className={cn(
-        "hidden items-center gap-1 text-[10px] text-text-tertiary lg:flex",
-        className,
-      )}
-    >
-      <Command className="h-3 w-3" />K {t.chatSession.searchSessions}
-    </p>
   );
 }
