@@ -3,7 +3,13 @@ import { GatewayClient, type ConnectionState } from "@/lib/gatewayClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { toChatMessagesFromGateway, toChatMessagesFromRest, type ChatMessage } from "./chatMessages";
+import {
+  appendInflightToMessages,
+  toChatMessagesFromGateway,
+  toChatMessagesFromRest,
+  type ChatMessage,
+  type SessionInflightTurn,
+} from "./chatMessages";
 import type { SessionInfo } from "./useMessageStream";
 
 interface SessionResumeResponse {
@@ -13,6 +19,7 @@ interface SessionResumeResponse {
   running?: boolean;
   info?: SessionInfo;
   messages?: unknown[];
+  inflight?: SessionInflightTurn | null;
 }
 
 interface SessionActivateResponse {
@@ -22,6 +29,7 @@ interface SessionActivateResponse {
   status?: string;
   info?: SessionInfo;
   messages?: unknown[];
+  inflight?: SessionInflightTurn | null;
 }
 
 interface SessionCreateResponse {
@@ -39,6 +47,20 @@ export interface UseChatGatewayOptions {
   profile: string;
   onHydrated?: (messages: ChatMessage[]) => void;
   onSessionInfo?: (info: SessionInfo) => void;
+}
+
+function hydrateSessionMessages(
+  restMessages: ChatMessage[] | null | undefined,
+  gatewayMessages: unknown[] | null | undefined,
+  inflight?: SessionInflightTurn | null,
+): ChatMessage[] {
+  let base: ChatMessage[] = [];
+  if (restMessages && restMessages.length > 0) {
+    base = restMessages;
+  } else if (Array.isArray(gatewayMessages) && gatewayMessages.length > 0) {
+    base = toChatMessagesFromGateway(gatewayMessages);
+  }
+  return appendInflightToMessages(base, inflight);
 }
 
 export function useChatGateway({
@@ -157,16 +179,16 @@ export function useChatGateway({
             resumePromise,
           ]);
 
-          if (prefetchResult?.messages?.length) {
-            onHydratedRef.current?.(
-              toChatMessagesFromRest(prefetchResult.messages),
-            );
-          } else if (
-            Array.isArray(resumed.messages) &&
-            resumed.messages.length > 0
-          ) {
-            onHydratedRef.current?.(toChatMessagesFromGateway(resumed.messages));
-          }
+          const restMessages = prefetchResult?.messages?.length
+            ? toChatMessagesFromRest(prefetchResult.messages)
+            : null;
+          onHydratedRef.current?.(
+            hydrateSessionMessages(
+              restMessages,
+              resumed.messages,
+              resumed.inflight,
+            ),
+          );
 
           const runtimeId = resumed.session_id;
           const stored = resumed.stored_session_id ?? resumed.resumed ?? targetId;
@@ -345,16 +367,16 @@ export function useChatGateway({
           .getSessionMessages(stored, profile)
           .catch(() => null);
 
-        if (prefetch?.messages?.length) {
-          onHydratedRef.current?.(toChatMessagesFromRest(prefetch.messages));
-        } else if (
-          Array.isArray(activated.messages) &&
-          activated.messages.length > 0
-        ) {
-          onHydratedRef.current?.(toChatMessagesFromGateway(activated.messages));
-        } else {
-          onHydratedRef.current?.([]);
-        }
+        const restMessages = prefetch?.messages?.length
+          ? toChatMessagesFromRest(prefetch.messages)
+          : null;
+        onHydratedRef.current?.(
+          hydrateSessionMessages(
+            restMessages,
+            activated.messages,
+            activated.inflight,
+          ),
+        );
 
         syncResumeUrl(stored);
       } catch (e) {

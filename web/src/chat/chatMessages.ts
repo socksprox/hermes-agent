@@ -252,6 +252,54 @@ interface GatewayTranscriptRow {
   reasoning?: string;
 }
 
+export interface SessionInflightTurn {
+  user?: string;
+  assistant?: string;
+  streaming?: boolean;
+}
+
+export function inflightUserMessage(
+  inflight?: SessionInflightTurn | null,
+): ChatMessage | null {
+  const user = (inflight?.user ?? "").trim();
+  if (!user) return null;
+  return { id: nextMessageId("user"), role: "user", content: user };
+}
+
+export function inflightAssistantMessage(
+  inflight?: SessionInflightTurn | null,
+): ChatMessage | null {
+  const assistant = inflight?.assistant ?? "";
+  const streaming = Boolean(inflight?.streaming);
+  if (!assistant && !streaming) return null;
+  return {
+    id: nextMessageId("assistant"),
+    role: "assistant",
+    content: assistant,
+    streaming,
+  };
+}
+
+/** Append in-flight turn rows not yet committed to session history. */
+export function appendInflightToMessages(
+  base: readonly ChatMessage[],
+  inflight?: SessionInflightTurn | null,
+): ChatMessage[] {
+  const next = [...base];
+  const userMsg = inflightUserMessage(inflight);
+  if (userMsg) {
+    const lastUser = [...next].reverse().find((m) => m.role === "user");
+    if (!lastUser || lastUser.content.trim() !== userMsg.content.trim()) {
+      next.push(userMsg);
+    }
+  }
+  const assistantMsg = inflightAssistantMessage(inflight);
+  if (assistantMsg) {
+    next.push(assistantMsg);
+  }
+  return next;
+}
+
 /** Convert gateway RPC transcript rows (`session.activate` / `session.resume`). */
 export function toChatMessagesFromGateway(rows: unknown): ChatMessage[] {
   if (!Array.isArray(rows)) return [];

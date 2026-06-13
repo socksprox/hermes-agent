@@ -339,6 +339,13 @@ export function useMessageStream({
   const resetMessages = useCallback((next: ChatMessage[]) => {
     activeAssistantIdRef.current = null;
     deltaQueueRef.current = { assistant: "", reasoning: "" };
+
+    const last = next.at(-1);
+    if (last?.role === "assistant" && last.streaming) {
+      activeAssistantIdRef.current = last.id;
+      setSessionInfo((prev) => ({ ...prev, running: true }));
+    }
+
     setMessages(next);
   }, []);
 

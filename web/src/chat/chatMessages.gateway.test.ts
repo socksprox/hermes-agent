@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { toChatMessagesFromGateway } from "./chatMessages";
+import {
+  appendInflightToMessages,
+  toChatMessagesFromGateway,
+} from "./chatMessages";
 
 describe("toChatMessagesFromGateway", () => {
   it("maps gateway text rows to chat messages", () => {
@@ -27,5 +30,34 @@ describe("toChatMessagesFromGateway", () => {
 
   it("returns empty for non-arrays", () => {
     expect(toChatMessagesFromGateway(null)).toEqual([]);
+  });
+});
+
+describe("appendInflightToMessages", () => {
+  it("adds in-flight user and partial streaming assistant", () => {
+    const base = [{ id: "u1", role: "user" as const, content: "older" }];
+    const out = appendInflightToMessages(base, {
+      user: "write a long answer",
+      assistant: "partial answer",
+      streaming: true,
+    });
+    expect(out).toHaveLength(3);
+    expect(out[1]?.content).toBe("write a long answer");
+    expect(out[2]).toMatchObject({
+      role: "assistant",
+      content: "partial answer",
+      streaming: true,
+    });
+  });
+
+  it("dedupes inflight user when already last committed user row", () => {
+    const base = [{ id: "u1", role: "user" as const, content: "same prompt" }];
+    const out = appendInflightToMessages(base, {
+      user: "same prompt",
+      assistant: "typing…",
+      streaming: true,
+    });
+    expect(out).toHaveLength(2);
+    expect(out[1]?.role).toBe("assistant");
   });
 });
