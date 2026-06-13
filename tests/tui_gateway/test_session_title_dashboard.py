@@ -1,6 +1,9 @@
 """Dashboard session chrome: title in session.info and auto-title callback."""
 
 import threading
+import time
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,7 +15,7 @@ def server():
         "sys.modules",
         {
             "hermes_constants": MagicMock(
-                get_hermes_home=MagicMock(return_value="/tmp/hermes_test_title")
+                get_hermes_home=MagicMock(return_value=Path("/tmp/hermes_test_title"))
             ),
             "hermes_cli.env_loader": MagicMock(),
             "hermes_cli.banner": MagicMock(),
@@ -66,17 +69,31 @@ def test_session_info_includes_title(server, monkeypatch):
     assert info["title"] == "Persisted title"
 
 
+def _wait_for_prompt_turn(session: dict, *, timeout: float = 5.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with session["history_lock"]:
+            if not session.get("running"):
+                return
+        time.sleep(0.01)
+    raise AssertionError("prompt turn did not finish before timeout")
+
+
 def test_run_prompt_submit_auto_title_emits_session_info(server, monkeypatch, emits):
-    agent = MagicMock()
-    agent.model = "test/model"
-    agent.provider = "openrouter"
-    agent.run_conversation.return_value = {
-        "final_response": "Here is the answer.",
-        "messages": [
-            {"role": "user", "content": "hello"},
-            {"role": "assistant", "content": "Here is the answer."},
-        ],
-    }
+    agent = SimpleNamespace(
+        model="test/model",
+        provider="openrouter",
+        session_id="stored-1",
+    )
+    agent.run_conversation = MagicMock(
+        return_value={
+            "final_response": "Here is the answer.",
+            "messages": [
+                {"role": "user", "content": "hello"},
+                {"role": "assistant", "content": "Here is the answer."},
+            ],
+        }
+    )
 
     session = {
         "session_key": "stored-1",
@@ -93,7 +110,14 @@ def test_run_prompt_submit_auto_title_emits_session_info(server, monkeypatch, em
     monkeypatch.setattr(server, "_get_db", lambda: MagicMock())
     monkeypatch.setattr(server, "_get_usage", lambda _a: {})
     monkeypatch.setattr(server, "render_message", lambda raw, cols: raw)
-    monkeypatch.setattr(server, "_session_info", lambda _a, _s: {"model": "m", "title": "Generated title"})
+    monkeypatch.setattr(
+        server,
+        "_session_info",
+        lambda _a, _s: {"model": "m", "title": "Generated title"},
+    )
+    monkeypatch.setattr(server, "_sync_agent_model_with_config", lambda _sid, _session: None)
+    monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
+    monkeypatch.setattr(server, "_register_session_cwd", lambda _session: None)
 
     def fake_maybe_auto_title(db, sid, user, response, history, **kwargs):
         cb = kwargs.get("title_callback")
@@ -106,8 +130,12 @@ def test_run_prompt_submit_auto_title_emits_session_info(server, monkeypatch, em
     )
 
     server._run_prompt_submit("rid-title", "live-1", session, "hello")
+    _wait_for_prompt_turn(session)
+
+    errors = [e for e in emits if e[0] == "error"]
+    assert not errors, f"unexpected errors: {errors}"
 
     info_events = [e for e in emits if e[0] == "session.info"]
     assert any(
         e[2].get("title") == "Generated title" for e in info_events
-    ), f"expected title in session.info emits, got {info_events}"
+    ), f"expected title in session.info emits, got {emits}"

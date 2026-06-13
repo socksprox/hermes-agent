@@ -2165,8 +2165,8 @@ def _sync_session_key_after_compress(
             if the caller manages the worker lifecycle separately.
     """
     agent = session.get("agent")
-    new_session_id = getattr(agent, "session_id", None) or ""
-    old_key = session.get("session_key", "") or ""
+    new_session_id = str(getattr(agent, "session_id", None) or "").strip()
+    old_key = str(session.get("session_key", "") or "").strip()
     if not new_session_id or new_session_id == old_key:
         return
 
