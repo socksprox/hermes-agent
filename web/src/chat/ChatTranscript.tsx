@@ -79,16 +79,15 @@ export function ChatTranscript({
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     setNearBottom(true);
     const el = hostRef.current;
-    if (el) {
-      if (behavior === "auto") {
-        scrollHostToBottom(el);
-      } else {
-        bottomRef.current?.scrollIntoView({ behavior });
-        requestAnimationFrame(() => {
-          bottomRef.current?.scrollIntoView({ behavior });
-        });
-      }
+    if (!el) return;
+    if (behavior === "auto") {
+      scrollHostToBottom(el);
+      return;
     }
+    el.scrollTo({ top: el.scrollHeight, behavior });
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
   }, []);
 
   useEffect(() => {
@@ -110,7 +109,7 @@ export function ChatTranscript({
     return (
       <div
         className={cn(
-          "flex flex-1 flex-col items-center justify-center gap-4 px-4 py-8 text-center text-sm text-text-tertiary",
+          "flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-4 py-8 text-center text-sm text-text-tertiary",
           className,
         )}
       >
@@ -124,7 +123,7 @@ export function ChatTranscript({
       <div
         ref={hostRef}
         onScroll={onScroll}
-        className="h-full overflow-y-auto px-3 py-4 sm:px-4"
+        className="h-full touch-pan-y overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4"
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           {messages.map((msg) => {

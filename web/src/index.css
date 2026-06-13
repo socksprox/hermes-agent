@@ -146,6 +146,15 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
     overflow-x: hidden;
     overflow-y: auto;
   }
+
+  /* Rich chat: only the transcript scrolls — not the app header or composer. */
+  html:has([data-chat-active="true"]),
+  body:has([data-chat-active="true"]),
+  #root:has([data-chat-active="true"]) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
 }
 
 /* Nousnet's hermes-agent layout bumps `small` and `code` to readable

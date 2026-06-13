@@ -27,6 +27,21 @@ import type { QueuedMessage } from "./useMessageQueue";
 
 const TEXTAREA_MAX_HEIGHT_PX = 160;
 
+/** Shared toolbar control height — model switcher is the reference size. */
+const COMPOSER_CONTROL_HEIGHT = "h-7";
+const COMPOSER_ICON_CONTROL = cn(
+  COMPOSER_CONTROL_HEIGHT,
+  "w-7 shrink-0 rounded-md p-0 grid-cols-1 place-items-center [&>svg]:size-3.5",
+);
+const COMPOSER_GHOST_ICON_CONTROL = cn(
+  COMPOSER_ICON_CONTROL,
+  "border border-border/40",
+);
+const COMPOSER_MODEL_CONTROL = cn(
+  COMPOSER_CONTROL_HEIGHT,
+  "shrink-0 rounded-md border border-border/40 px-2.5 py-0 text-xs font-mono",
+);
+
 interface Props {
   gw: GatewayClient | null;
   sessionId: string | null;
@@ -244,7 +259,7 @@ export function ChatComposer({
   };
 
   return (
-    <div className="shrink-0 border-t border-border/40 bg-background-base/80 px-3 py-3 sm:px-4 backdrop-blur-sm">
+    <div className="shrink-0 overscroll-none border-t border-border/40 bg-background-base/80 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 backdrop-blur-sm">
       <div className="relative mx-auto max-w-3xl">
         <SlashPopover
           ref={slashRef}
@@ -307,7 +322,8 @@ export function ChatComposer({
             disabled={!canType}
             className={cn(
               "w-full min-h-[2.25rem] max-h-40 resize-none bg-transparent",
-              "text-sm outline-none placeholder:text-text-tertiary",
+              // 16px on mobile prevents iOS Safari from zooming on focus (theme base is 15px).
+              "text-[16px] sm:text-sm outline-none placeholder:text-text-tertiary touch-manipulation",
             )}
           />
 
@@ -327,11 +343,11 @@ export function ChatComposer({
               size="icon"
               disabled={!canType}
               onClick={() => fileInputRef.current?.click()}
-              className="shrink-0 rounded-md border border-border/40"
+              className={COMPOSER_GHOST_ICON_CONTROL}
               aria-label="Attach files"
               title="Attach files"
             >
-              <Plus className="h-4 w-4" />
+              <Plus />
             </Button>
 
             <Button
@@ -340,7 +356,7 @@ export function ChatComposer({
               size="sm"
               disabled={!sessionId}
               onClick={() => setModelOpen(true)}
-              className="shrink-0 rounded-md border border-border/40 px-2.5 py-1 text-xs font-mono"
+              className={COMPOSER_MODEL_CONTROL}
             >
               {modelShortName(model, provider)}
             </Button>
@@ -354,9 +370,10 @@ export function ChatComposer({
                 destructive
                 onClick={() => void handleStop()}
                 disabled={!sessionId || busy}
+                className={COMPOSER_ICON_CONTROL}
                 aria-label="Stop"
               >
-                <Square className="h-4 w-4" />
+                <Square />
               </Button>
             )}
 
@@ -366,13 +383,10 @@ export function ChatComposer({
                 size="icon"
                 onClick={() => void deliverPayload(currentPayload())}
                 disabled={!canType || busy || hasUploading}
+                className={COMPOSER_ICON_CONTROL}
                 aria-label={running ? "Queue message" : "Send"}
               >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
+                {busy ? <Loader2 className="animate-spin" /> : <Send />}
               </Button>
             )}
           </div>
