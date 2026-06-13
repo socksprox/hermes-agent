@@ -32,7 +32,6 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 
 import { ChatSidebar } from "@/components/ChatSidebar";
-import { useChatPageHeaderExtraEnd } from "@/chat/ChatShell";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { PluginSlot } from "@/plugins";
@@ -239,31 +238,6 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
-
-  const mobilePanelHeaderButton = useMemo(
-    () =>
-      isActive && narrow ? (
-        <Button
-          ghost
-          onClick={() => setMobilePanelOpenRaw(true)}
-          aria-expanded={mobilePanelOpen}
-          aria-controls="chat-side-panel"
-          className={cn(
-            "shrink-0 rounded border border-current/20",
-            "px-2 py-1 text-xs font-medium tracking-wide",
-            "text-text-secondary hover:text-midground hover:bg-midground/5",
-          )}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <PanelRight className="h-3 w-3 shrink-0" />
-            {modelToolsLabel}
-          </span>
-        </Button>
-      ) : null,
-    [isActive, mobilePanelOpen, modelToolsLabel, narrow],
-  );
-
-  useChatPageHeaderExtraEnd(mobilePanelHeaderButton);
 
   const handleCopyLast = () => {
     const ws = wsRef.current;
@@ -886,6 +860,32 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
             ref={hostRef}
             className="hermes-chat-xterm-host min-h-0 min-w-0 flex-1"
           />
+
+          {narrow && (
+            <Button
+              ghost
+              onClick={() => setMobilePanelOpenRaw(true)}
+              aria-expanded={mobilePanelOpen}
+              aria-controls="chat-side-panel"
+              className={cn(
+                "absolute z-10 lg:hidden",
+                "normal-case tracking-normal font-normal",
+                "rounded border border-current/30",
+                "bg-black/20 backdrop-blur-sm",
+                "opacity-70 hover:opacity-100 hover:border-current/60",
+                "transition-opacity duration-150",
+                "top-2 right-2 px-2 py-1 text-xs sm:top-3 sm:right-3 sm:px-2.5 sm:py-1.5",
+              )}
+              style={{ color: TERMINAL_THEME_STATIC.foreground }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <PanelRight className="h-3 w-3 shrink-0" />
+                <span className="hidden min-[400px]:inline tracking-wide">
+                  {modelToolsLabel}
+                </span>
+              </span>
+            </Button>
+          )}
 
           <Button
             ghost
