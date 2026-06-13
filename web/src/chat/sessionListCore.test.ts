@@ -31,6 +31,27 @@ describe("resumableHistory", () => {
     ];
     expect(resumableHistory(history, live).map((s) => s.id)).toEqual(["b"]);
   });
+
+  it("dedupes when live runtime id differs from stored history id", () => {
+    const history: SessionListItem[] = [
+      {
+        id: "stored-key-1",
+        title: "Hi",
+        preview: "hi",
+        started_at: 1,
+        message_count: 1,
+      },
+    ];
+    const live: SessionActiveItem[] = [
+      {
+        id: "runtime01",
+        session_key: "stored-key-1",
+        status: "idle",
+        title: "Hi",
+      },
+    ];
+    expect(resumableHistory(history, live)).toEqual([]);
+  });
 });
 
 describe("sessionDisplayTitle", () => {
