@@ -1,8 +1,15 @@
 import type { GatewayClient } from "@/lib/gatewayClient";
 import { Button } from "@nous-research/ui/ui/components/button";
+import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Loader2, Send, Square } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, Paperclip, Send, Square } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+} from "react";
 
 import {
   SlashPopover,
@@ -10,9 +17,12 @@ import {
 } from "@/components/SlashPopover";
 import { executeSlash } from "@/lib/slashExec";
 
+import type { SubmitPayload } from "./attachmentTypes";
+import { ComposerAttachmentList } from "./ComposerAttachmentList";
 import { ModelMenuPopover } from "./ModelMenuPopover";
 import { modelShortName } from "./modelPickerCore";
 import { QueuedMessageItem } from "./QueuedMessageItem";
+import { useComposerAttachments } from "./useComposerAttachments";
 import type { QueuedMessage } from "./useMessageQueue";
 
 const TEXTAREA_MAX_HEIGHT_PX = 160;
@@ -25,8 +35,8 @@ interface Props {
   running?: boolean;
   disabled?: boolean;
   queue: QueuedMessage[];
-  onSubmit(text: string): Promise<void>;
-  onEnqueue(text: string): void;
+  onSubmit(payload: SubmitPayload): Promise<void>;
+  onEnqueue(payload: SubmitPayload): void;
   onQueueSendNow(id: string): void;
   onQueueEdit(id: string, text: string): void;
   onQueueDelete(id: string): void;
@@ -48,15 +58,28 @@ export function ChatComposer({
   onQueueDelete,
   onSystem,
 }: Props) {
+  const { showToast } = useToast();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const slashRef = useRef<SlashPopoverHandle>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
+
+  const { attachments, addFiles, remove, clear } = useComposerAttachments({
+    gw,
+    sessionId,
+    onError: (message) => showToast(message, "error"),
+  });
 
   const canType = !!gw && !!sessionId && !disabled;
   const isRunning = !!running || busy;
   const hasInput = !!input.trim();
+  const hasAttachments = attachments.length > 0;
+  const canSend = hasInput || hasAttachments;
+  const hasUploading = attachments.some((a) => a.uploadState === "uploading");
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -74,9 +97,30 @@ export function ChatComposer({
     requestAnimationFrame(resizeTextarea);
   }, [resizeTextarea]);
 
-  const deliverText = useCallback(
-    async (text: string, opts?: { forceSend?: boolean }) => {
+  const currentPayload = useCallback(
+    (): SubmitPayload => ({
+      text: input.trim(),
+      attachments: [...attachments],
+    }),
+    [input, attachments],
+  );
+
+  const deliverPayload = useCallback(
+    async (payload: SubmitPayload, opts?: { forceSend?: boolean }) => {
       if (!canType || busy) return;
+      const text = payload.text.trim();
+      const atts = payload.attachments;
+
+      if (!text && atts.length === 0) return;
+
+      if (atts.some((a) => a.uploadState === "error")) {
+        showToast("Remove failed attachments before sending", "error");
+        return;
+      }
+      if (atts.some((a) => a.uploadState === "uploading")) {
+        showToast("Wait for attachments to finish uploading", "error");
+        return;
+      }
 
       if (text.startsWith("/")) {
         setBusy(true);
@@ -87,10 +131,11 @@ export function ChatComposer({
             gw: gw!,
             callbacks: {
               sys: onSystem,
-              send: onSubmit,
+              send: (t) => onSubmit({ text: t, attachments: [] }),
             },
           });
           clearInput();
+          clear();
         } finally {
           setBusy(false);
           textareaRef.current?.focus();
@@ -99,16 +144,18 @@ export function ChatComposer({
       }
 
       if (running && !opts?.forceSend) {
-        onEnqueue(text);
+        onEnqueue({ text, attachments: atts });
         clearInput();
+        clear();
         textareaRef.current?.focus();
         return;
       }
 
       setBusy(true);
       try {
-        await onSubmit(text);
+        await onSubmit({ text, attachments: atts });
         clearInput();
+        clear();
       } finally {
         setBusy(false);
         textareaRef.current?.focus();
@@ -124,16 +171,17 @@ export function ChatComposer({
       onSubmit,
       onEnqueue,
       clearInput,
+      clear,
     ],
   );
 
   const handleSubmit = useCallback(
     (overrideText?: string) => {
       const text = (overrideText ?? input).trim();
-      if (!text) return;
-      void deliverText(text);
+      if (!text && !hasAttachments) return;
+      void deliverPayload({ text, attachments: [...attachments] });
     },
-    [input, deliverText],
+    [input, hasAttachments, attachments, deliverPayload],
   );
 
   const handleStop = useCallback(async () => {
@@ -152,6 +200,46 @@ export function ChatComposer({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    }
+  };
+
+  const handleFileInput = (files: FileList | null) => {
+    if (!files?.length) return;
+    void addFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const resetDrag = () => {
+    dragDepthRef.current = 0;
+    setDragActive(false);
+  };
+
+  const handleDragEnter = (e: DragEvent) => {
+    if (!canType || !e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragActive(false);
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    if (!canType || !e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDrop = (e: DragEvent) => {
+    if (!canType) return;
+    e.preventDefault();
+    resetDrag();
+    if (e.dataTransfer.files.length > 0) {
+      void addFiles(e.dataTransfer.files);
     }
   };
 
@@ -175,6 +263,7 @@ export function ChatComposer({
               <QueuedMessageItem
                 key={item.id}
                 text={item.text}
+                attachmentCount={item.attachments.length}
                 onSendNow={() => onQueueSendNow(item.id)}
                 onEdit={() => {
                   onQueueEdit(item.id, item.text);
@@ -187,64 +276,104 @@ export function ChatComposer({
           </div>
         )}
 
-        <div className="flex items-end gap-2 rounded-lg border border-border/50 bg-muted/10 p-2">
-          <Button
-            type="button"
-            ghost
-            size="sm"
-            disabled={!sessionId}
-            onClick={() => setModelOpen(true)}
-            className="shrink-0 rounded-full border border-border/40 px-2.5 py-1 text-xs font-mono"
-          >
-            {modelShortName(model, provider)}
-          </Button>
-
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            rows={1}
-            placeholder={
-              running
-                ? "Queue a message… (/ for commands)"
-                : "Message Hermes… (/ for commands)"
-            }
-            disabled={!canType}
-            className={cn(
-              "min-h-[2.25rem] max-h-40 flex-1 resize-none bg-transparent",
-              "text-sm outline-none placeholder:text-text-tertiary",
-            )}
+        <div
+          className={cn(
+            "rounded-lg border bg-muted/10 p-2 transition-colors",
+            dragActive
+              ? "border-primary/50 bg-primary/5"
+              : "border-border/50",
+          )}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <ComposerAttachmentList
+            attachments={attachments}
+            onRemove={(id) => void remove(id)}
           />
 
-          {isRunning && (
-            <Button
-              type="button"
-              size="icon"
-              destructive
-              onClick={() => void handleStop()}
-              disabled={!sessionId || busy}
-              aria-label="Stop"
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,*"
+              className="hidden"
+              onChange={(e) => handleFileInput(e.target.files)}
+            />
 
-          {hasInput && (
             <Button
               type="button"
+              ghost
               size="icon"
-              onClick={() => handleSubmit()}
-              disabled={!canType || busy}
-              aria-label={running ? "Queue message" : "Send"}
+              disabled={!canType}
+              onClick={() => fileInputRef.current?.click()}
+              className="shrink-0"
+              aria-label="Attach files"
+              title="Attach files"
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
+              <Paperclip className="h-4 w-4" />
             </Button>
-          )}
+
+            <Button
+              type="button"
+              ghost
+              size="sm"
+              disabled={!sessionId}
+              onClick={() => setModelOpen(true)}
+              className="shrink-0 rounded-full border border-border/40 px-2.5 py-1 text-xs font-mono"
+            >
+              {modelShortName(model, provider)}
+            </Button>
+
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              rows={1}
+              placeholder={
+                running
+                  ? "Queue a message… (/ for commands)"
+                  : "Message Hermes… (/ for commands)"
+              }
+              disabled={!canType}
+              className={cn(
+                "min-h-[2.25rem] max-h-40 flex-1 resize-none bg-transparent",
+                "text-sm outline-none placeholder:text-text-tertiary",
+              )}
+            />
+
+            {isRunning && (
+              <Button
+                type="button"
+                size="icon"
+                destructive
+                onClick={() => void handleStop()}
+                disabled={!sessionId || busy}
+                aria-label="Stop"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            )}
+
+            {canSend && (
+              <Button
+                type="button"
+                size="icon"
+                onClick={() => void deliverPayload(currentPayload())}
+                disabled={!canType || busy || hasUploading}
+                aria-label={running ? "Queue message" : "Send"}
+              >
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

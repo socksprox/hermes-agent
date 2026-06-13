@@ -4,6 +4,14 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { PluginSlot } from "@/plugins";
 
+import type { SubmitPayload } from "./attachmentTypes";
+import {
+  buildSubmitText,
+  buildUserDisplayContent,
+  restoreAttachmentsFromSnapshot,
+  syncAttachmentsForSubmit,
+  withSessionBusyRetry,
+} from "./attachFiles";
 import { ChatComposer } from "./ChatComposer";
 import { ChatTranscript } from "./ChatTranscript";
 import { PromptOverlays } from "./PromptOverlays";
@@ -17,7 +25,7 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   const resetRef = useRef<(msgs: Parameters<typeof resetMessages>[0]) => void>(
     () => {},
   );
-  const pendingImmediateRef = useRef<string | null>(null);
+  const pendingImmediateRef = useRef<SubmitPayload | null>(null);
   const drainingRef = useRef(false);
 
   const messageQueue = useMessageQueue();
@@ -56,29 +64,42 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
   const mergedInfo = { ...gatewayInfo, ...sessionInfo };
 
   const submitMessage = useCallback(
-    async (text: string) => {
-      if (!sessionId) return;
-      addUserMessage(text);
-      await request("prompt.submit", { session_id: sessionId, text });
+    async (payload: SubmitPayload) => {
+      if (!sessionId || !gw) return;
+
+      const synced = await syncAttachmentsForSubmit(payload.attachments, {
+        request: (method, params) => request(method, params),
+        sessionId,
+      });
+
+      const promptText = buildSubmitText(payload.text, synced);
+      const displayContent = buildUserDisplayContent(payload.text, synced);
+      const displayAttachments = synced.map((a) => ({
+        kind: a.kind,
+        label: a.label,
+        previewUrl: a.kind === "image" ? a.dataUrl : undefined,
+        refText: a.refText,
+      }));
+
+      addUserMessage(displayContent, { attachments: displayAttachments });
+      await withSessionBusyRetry(() =>
+        request("prompt.submit", { session_id: sessionId, text: promptText }),
+      );
     },
-    [sessionId, addUserMessage, request],
+    [sessionId, gw, addUserMessage, request],
   );
 
   const handleSubmit = useCallback(
-    async (text: string) => {
+    async (payload: SubmitPayload) => {
       if (!sessionId) return;
-      if (mergedInfo.running) {
-        messageQueue.enqueue(text);
-        return;
-      }
-      await submitMessage(text);
+      await submitMessage(payload);
     },
-    [sessionId, mergedInfo.running, messageQueue, submitMessage],
+    [sessionId, submitMessage],
   );
 
   const handleEnqueue = useCallback(
-    (text: string) => {
-      messageQueue.enqueue(text);
+    (payload: SubmitPayload) => {
+      messageQueue.enqueue(payload.text, payload.attachments);
     },
     [messageQueue],
   );
@@ -88,13 +109,17 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
       const item = messageQueue.take(id);
       if (!item || !sessionId || !gw) return;
 
-      pendingImmediateRef.current = item.text;
+      const payload: SubmitPayload = {
+        text: item.text,
+        attachments: restoreAttachmentsFromSnapshot(item.attachments),
+      };
+      pendingImmediateRef.current = payload;
 
       if (mergedInfo.running) {
         try {
           await gw.request("session.interrupt", { session_id: sessionId });
         } catch {
-          messageQueue.enqueue(item.text);
+          messageQueue.enqueue(payload.text, payload.attachments);
           pendingImmediateRef.current = null;
         }
       }
@@ -132,7 +157,10 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
 
     messageQueue.dequeue();
     drainingRef.current = true;
-    void submitMessage(head.text).finally(() => {
+    void submitMessage({
+      text: head.text,
+      attachments: restoreAttachmentsFromSnapshot(head.attachments),
+    }).finally(() => {
       drainingRef.current = false;
     });
   }, [mergedInfo.running, connecting, overlay, messageQueue.queue, submitMessage]);

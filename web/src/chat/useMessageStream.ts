@@ -9,6 +9,7 @@ import {
   type ChatMessage,
   type GatewayEventPayload,
   type PromptOverlay,
+  type UserMessageAttachment,
   upsertToolPart,
 } from "./chatMessages";
 
@@ -310,13 +311,21 @@ export function useMessageStream({
     };
   }, []);
 
-  const addUserMessage = useCallback((text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: nextMessageId("user"), role: "user", content: text },
-    ]);
-    setSessionInfo((prev) => ({ ...prev, running: true }));
-  }, []);
+  const addUserMessage = useCallback(
+    (text: string, opts?: { attachments?: UserMessageAttachment[] }) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextMessageId("user"),
+          role: "user",
+          content: text,
+          attachments: opts?.attachments,
+        },
+      ]);
+      setSessionInfo((prev) => ({ ...prev, running: true }));
+    },
+    [],
+  );
 
   const addSystemMessage = useCallback((text: string) => {
     setMessages((prev) => [

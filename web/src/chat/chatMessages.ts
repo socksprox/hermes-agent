@@ -3,10 +3,18 @@ import type { SessionMessage } from "@/lib/api";
 
 export type ChatMessageRole = "user" | "assistant" | "system";
 
+export interface UserMessageAttachment {
+  kind: "image" | "file";
+  label: string;
+  previewUrl?: string;
+  refText?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatMessageRole;
   content: string;
+  attachments?: UserMessageAttachment[];
   streaming?: boolean;
   reasoning?: string;
   reasoningStreaming?: boolean;

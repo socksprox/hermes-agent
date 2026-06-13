@@ -1,8 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 
+import type { QueuedAttachmentSnapshot } from "./attachmentTypes";
+import { restoreAttachmentsFromSnapshot, snapshotAttachments } from "./attachFiles";
+import type { ComposerAttachment } from "./attachmentTypes";
+
 export interface QueuedMessage {
   id: string;
   text: string;
+  attachments: QueuedAttachmentSnapshot[];
 }
 
 export function useMessageQueue() {
@@ -14,8 +19,12 @@ export function useMessageQueue() {
   }, []);
 
   const enqueue = useCallback(
-    (text: string) => {
-      queueRef.current.push({ id: crypto.randomUUID(), text });
+    (text: string, attachments: ComposerAttachment[] = []) => {
+      queueRef.current.push({
+        id: crypto.randomUUID(),
+        text,
+        attachments: snapshotAttachments(attachments),
+      });
       sync();
     },
     [sync],
@@ -51,10 +60,7 @@ export function useMessageQueue() {
     sync();
   }, [sync]);
 
-  const peek = useCallback(
-    () => queueRef.current[0],
-    [],
-  );
+  const peek = useCallback(() => queueRef.current[0], []);
 
-  return { queue, enqueue, dequeue, remove, take, clear, peek };
+  return { queue, enqueue, dequeue, remove, take, clear, peek, restoreAttachmentsFromSnapshot };
 }

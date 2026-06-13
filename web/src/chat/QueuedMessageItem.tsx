@@ -2,12 +2,14 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import {
   ArrowRight,
   ArrowUp,
+  Paperclip,
   Pencil,
   Trash2,
 } from "lucide-react";
 
 interface Props {
   text: string;
+  attachmentCount?: number;
   onSendNow(): void;
   onEdit(): void;
   onDelete(): void;
@@ -15,16 +17,34 @@ interface Props {
 
 export function QueuedMessageItem({
   text,
+  attachmentCount = 0,
   onSendNow,
   onEdit,
   onDelete,
 }: Props) {
+  const hasAttachments = attachmentCount > 0;
+  const displayText =
+    text ||
+    (hasAttachments
+      ? `${attachmentCount} attachment${attachmentCount === 1 ? "" : "s"}`
+      : "");
+
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
 
+      {hasAttachments && (
+        <span
+          className="flex shrink-0 items-center gap-0.5 text-text-tertiary"
+          title={`${attachmentCount} attachment(s)`}
+        >
+          <Paperclip className="h-3 w-3" />
+          <span className="text-xs tabular-nums">{attachmentCount}</span>
+        </span>
+      )}
+
       <p className="min-w-0 flex-1 truncate text-sm text-text-secondary">
-        {text}
+        {displayText}
       </p>
 
       <div className="flex shrink-0 items-center gap-0.5">
