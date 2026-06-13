@@ -119,8 +119,10 @@ function RichSessionProvider({
     },
   });
 
+  const mgmtGw = useMgmtGateway(isActive);
+
   const sessionList = useSessionList({
-    gw: gateway.gw,
+    gw: mgmtGw,
     sessionId: gateway.sessionId,
     enabled: isActive,
   });

@@ -16,6 +16,7 @@ interface SessionResumeResponse {
 
 interface SessionCreateResponse {
   session_id: string;
+  stored_session_id?: string;
 }
 
 const MAX_RECONNECT_ATTEMPTS = 8;
@@ -53,6 +54,8 @@ export function useChatGateway({
   const storedIdRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const urlPersistedRef = useRef(false);
+  /** Set before URL ?resume= sync so the gateway effect skips teardown/rebind. */
+  const persistUrlSyncRef = useRef(false);
   const onHydratedRef = useRef(onHydrated);
   const onSessionInfoRef = useRef(onSessionInfo);
   const bindSessionRef = useRef<
@@ -156,9 +159,10 @@ export function useChatGateway({
             },
           );
           const runtimeId = created.session_id;
+          const stored = created.stored_session_id ?? null;
           setSessionId(runtimeId);
-          setStoredSessionId(null);
-          storedIdRef.current = null;
+          setStoredSessionId(stored);
+          storedIdRef.current = stored;
           onHydratedRef.current?.([]);
         }
       } catch (e) {
@@ -210,17 +214,27 @@ export function useChatGateway({
 
     const offComplete = gw.on("message.complete", () => {
       if (urlPersistedRef.current || resumeParam) return;
-      const persistId = storedIdRef.current ?? sessionIdRef.current;
+      const persistId = storedIdRef.current;
       if (!persistId) return;
       urlPersistedRef.current = true;
-      storedIdRef.current = persistId;
       setStoredSessionId(persistId);
+      persistUrlSyncRef.current = true;
       const next = new URLSearchParams(searchParams);
       next.set("resume", persistId);
       setSearchParams(next, { replace: true });
     });
 
-    void bindSession(resumeParam, { resume: !!resumeParam });
+    const alreadyOnThisSession =
+      !!resumeParam &&
+      storedIdRef.current === resumeParam &&
+      !!sessionIdRef.current &&
+      gw.state === "open";
+
+    if (!alreadyOnThisSession) {
+      void bindSession(resumeParam, { resume: !!resumeParam });
+    } else {
+      setError(null);
+    }
 
     return () => {
       wantReconnectRef.current = false;
@@ -228,6 +242,10 @@ export function useChatGateway({
       offState();
       offInfo();
       offComplete();
+      if (persistUrlSyncRef.current) {
+        persistUrlSyncRef.current = false;
+        return;
+      }
       gw.close();
     };
   }, [gw, resumeParam, profile, bindSession, clearReconnectTimer, searchParams, setSearchParams]);
