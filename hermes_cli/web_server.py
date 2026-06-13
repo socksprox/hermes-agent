@@ -7705,21 +7705,6 @@ class MemoryReset(BaseModel):
     target: str = "all"
 
 
-class MemoryContentUpdate(BaseModel):
-    memory: str | None = None
-    user: str | None = None
-
-
-def _read_builtin_memory_files() -> dict[str, str]:
-    mem_dir = get_hermes_home() / "memories"
-    mem_dir.mkdir(parents=True, exist_ok=True)
-    out: dict[str, str] = {}
-    for fname, key in (("MEMORY.md", "memory"), ("USER.md", "user")):
-        path = mem_dir / fname
-        out[key] = path.read_text(encoding="utf-8") if path.exists() else ""
-    return out
-
-
 @app.get("/api/memory")
 async def get_memory_status():
     from plugins.memory import discover_memory_providers
@@ -7801,37 +7786,6 @@ async def reset_memory(body: MemoryReset):
             except OSError as exc:
                 raise HTTPException(status_code=500, detail=f"Could not delete {fname}: {exc}")
     return {"ok": True, "deleted": deleted}
-
-
-@app.get("/api/memory/content")
-async def get_memory_content():
-    return _read_builtin_memory_files()
-
-
-@app.put("/api/memory/content")
-async def put_memory_content(body: MemoryContentUpdate):
-    mem_dir = get_hermes_home() / "memories"
-    mem_dir.mkdir(parents=True, exist_ok=True)
-    written: list[str] = []
-    for key, fname in (("memory", "MEMORY.md"), ("user", "USER.md")):
-        value = getattr(body, key, None)
-        if value is None:
-            continue
-        path = mem_dir / fname
-        try:
-            path.write_text(value, encoding="utf-8")
-            written.append(fname)
-        except OSError as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Could not write {fname}: {exc}",
-            ) from exc
-    if not written:
-        raise HTTPException(
-            status_code=400,
-            detail="Provide memory and/or user content to write",
-        )
-    return {"ok": True, "written": written}
 
 
 # ---------------------------------------------------------------------------
