@@ -392,7 +392,16 @@ export function useChatGateway({
     }
 
     // Live session with no ?resume= — keep it when returning from another tab.
-    if (!resumeParam && sessionIdRef.current && gw.state === "open") {
+    if (!resumeParam && sessionIdRef.current) {
+      if (gw.state === "open") {
+        return;
+      }
+      if (bootingRef.current) {
+        return;
+      }
+      // Socket dropped while chat was hidden — resume instead of minting a blank session.
+      const target = storedIdRef.current ?? sessionIdRef.current;
+      void bindSession(target, { resume: true });
       return;
     }
 
@@ -403,6 +412,7 @@ export function useChatGateway({
       gw.state === "open";
 
     if (!alreadyOnThisSession) {
+      if (bootingRef.current) return;
       void bindSession(resumeParam, { resume: !!resumeParam });
     } else {
       setError(null);

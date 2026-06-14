@@ -21,6 +21,8 @@ interface Props {
   className?: string;
   onForkMessage?: (messageId: string) => void;
   forkingMessageId?: string | null;
+  /** Suppress the empty-state copy while reconnecting an existing session. */
+  holdEmptyPlaceholder?: boolean;
 }
 
 function ReasoningBlock({
@@ -72,6 +74,7 @@ export function ChatTranscript({
   className,
   onForkMessage,
   forkingMessageId,
+  holdEmptyPlaceholder = false,
 }: Props) {
   const { t } = useI18n();
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -111,6 +114,19 @@ export function ChatTranscript({
   const showJumpToBottom = !nearBottom && isStreaming;
 
   if (messages.length === 0) {
+    if (holdEmptyPlaceholder) {
+      return (
+        <div
+          className={cn(
+            "flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-4 py-8 text-center text-sm text-text-tertiary",
+            className,
+          )}
+        >
+          <p>Connecting to gateway…</p>
+        </div>
+      );
+    }
+
     return (
       <div
         className={cn(

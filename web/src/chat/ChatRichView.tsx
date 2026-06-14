@@ -256,16 +256,11 @@ export function ChatRichView({ isActive: _isActive = true }: { isActive?: boolea
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
-        {connecting && messages.length === 0 && (
-          <p className="px-4 py-2 text-xs text-text-tertiary">
-            Connecting to gateway…
-          </p>
-        )}
-
         <ChatTranscript
           messages={messages}
           thinkingStatus={thinkingStatus}
           className="flex-1"
+          holdEmptyPlaceholder={!!sessionId && connecting}
           onForkMessage={forkFromMessages ? handleForkMessage : undefined}
           forkingMessageId={forkingMessageId}
         />
