@@ -6,6 +6,7 @@ import {
   useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { withResumeSession } from "@/lib/chatResumeUrl";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -442,7 +443,9 @@ function SessionRow({
           title={t.sessions.resumeInChat}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/chat?resume=${encodeURIComponent(session.id)}`);
+            navigate(
+              `/chat?${withResumeSession(new URLSearchParams(), session.id).toString()}`,
+            );
           }}
         >
           <Play />

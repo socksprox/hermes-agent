@@ -16,6 +16,7 @@ import {
   useLocation,
   useNavigate,
   useMatch,
+  useSearchParams,
 } from "react-router-dom";
 import {
   Activity,
@@ -102,6 +103,11 @@ import { PluginPage, PluginSlot, usePlugins } from "@/plugins";
 import type { PluginManifest } from "@/plugins";
 import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
+import {
+  hasSessionsSidebarParam,
+  withSessionsSidebarParam,
+  withoutSessionsSidebarParam,
+} from "@/lib/chatResumeUrl";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 
@@ -345,7 +351,8 @@ const SIDEBAR_COLLAPSED_KEY = "hermes-sidebar-collapsed";
 
 export default function App() {
   const { t } = useI18n();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const { manifests, loading: pluginsLoading } = usePlugins();
   const { theme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -374,6 +381,10 @@ export default function App() {
   const isDocsRoute = pathname === "/docs" || pathname === "/docs/";
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   const isChatRoute = normalizedPath === "/chat";
+  const chatSessionsSidebarOpen = useMemo(
+    () => isChatRoute && hasSessionsSidebarParam(search),
+    [isChatRoute, search],
+  );
   const embeddedChat = isDashboardEmbeddedChatEnabled();
 
   // `dashboard.show_token_analytics` gates the Analytics nav item.  The
@@ -478,33 +489,24 @@ export default function App() {
 
   const chatSessionHost = embeddedChat && !chatOverriddenByPlugin;
 
-  const [chatSidebarDrilled, setChatSidebarDrilled] = useState(false);
-  const prevPathnameRef = useRef(pathname);
-
-  useEffect(() => {
-    const prevNorm = prevPathnameRef.current.replace(/\/$/, "") || "/";
-    const wasChat = prevNorm === "/chat";
-    prevPathnameRef.current = pathname;
-
-    if (!isChatRoute) {
-      setChatSidebarDrilled(false);
-      return;
-    }
-
-    if (!wasChat && isChatRoute && chatSessionHost && !isDesktopCollapsed) {
-      setChatSidebarDrilled(true);
-    }
-  }, [pathname, isChatRoute, chatSessionHost, isDesktopCollapsed]);
-
   const showChatSessionsSidebar =
     chatSessionHost &&
-    isChatRoute &&
-    chatSidebarDrilled &&
+    chatSessionsSidebarOpen &&
     !isDesktopCollapsed;
 
   const openChatSidebar = useCallback(() => {
-    setChatSidebarDrilled(true);
-  }, []);
+    setSearchParams(
+      (prev) => withSessionsSidebarParam(prev),
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  const closeChatSidebar = useCallback(() => {
+    setSearchParams(
+      (prev) => withoutSessionsSidebarParam(prev),
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   const wrapChatSessionProvider = (children: ReactNode) =>
     chatSessionHost ? (
@@ -661,7 +663,7 @@ export default function App() {
             >
               {showChatSessionsSidebar ? (
                 <ChatSidebarSessionsView
-                  onBack={() => setChatSidebarDrilled(false)}
+                  onBack={closeChatSidebar}
                   closeMobile={closeMobile}
                 />
               ) : (

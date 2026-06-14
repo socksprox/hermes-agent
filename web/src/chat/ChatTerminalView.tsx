@@ -29,20 +29,20 @@ import { cn } from "@/lib/utils";
 import { Copy, PanelRight, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
 
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { useI18n } from "@/i18n";
-import { api } from "@/lib/api";
 import { PluginSlot } from "@/plugins";
 import { useTheme } from "@/themes";
 import { useProfileScope } from "@/contexts/useProfileScope";
+import { useResolvedResumeParam } from "@/chat/useResolvedResumeParam";
 
 function buildWsUrl(
   authParam: [string, string],
   resume: string | null,
   channel: string,
   profile: string,
+  resumeExact: boolean,
 ): string {
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   // ``authParam`` is ``["token", <session>]`` in loopback mode and
@@ -50,6 +50,7 @@ function buildWsUrl(
   // ``_ws_auth_ok`` picks whichever shape matches the current gate state.
   const qs = new URLSearchParams({ [authParam[0]]: authParam[1], channel });
   if (resume) qs.set("resume", resume);
+  if (resumeExact) qs.set("resume_exact", "1");
   // Profile-scoped chat: the PTY child gets HERMES_HOME pointed at the
   // selected profile, so the conversation runs with that profile's model,
   // skills, memory, and sessions (see web_server._resolve_chat_argv).
@@ -123,7 +124,6 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
   // the moment `isActive` flips back to true (display:none → display:flex
   // collapses the host's box, so ResizeObserver never fires on return).
   const syncMetricsRef = useRef<(() => void) | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
   // Lazy-init: the missing-token check happens at construction so the effect
   // body doesn't have to setState (React 19's set-state-in-effect rule).
   // In gated (OAuth) mode the server intentionally omits the session token —
@@ -176,37 +176,16 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
   // Sessions page relies on `/chat?resume=<id>` changing at runtime, so we must
   // treat the current resume target as part of the PTY identity and rebuild the
   // terminal session when it changes.
-  const resumeParam = searchParams.get("resume");
-  // Profile-scoped chat: spawn the PTY under the globally selected
-  // management profile. Changing it remounts the terminal (key below /
-  // effect dep) so the user explicitly starts a fresh scoped session.
   const { profile: scopedProfile } = useProfileScope();
-  const channel = useMemo(() => generateChannelId(), [resumeParam, scopedProfile]);
-
-  useEffect(() => {
-    if (!resumeParam) return;
-
-    let cancelled = false;
-
-    api
-      .getSessionLatestDescendant(resumeParam, scopedProfile)
-      .then((res) => {
-        if (cancelled || !res.session_id || res.session_id === resumeParam) {
-          return;
-        }
-
-        const next = new URLSearchParams(searchParams);
-        next.set("resume", res.session_id);
-        setSearchParams(next, { replace: true });
-      })
-      .catch(() => {
-        // Best-effort: old servers or missing sessions should not block chat.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [resumeParam, searchParams, setSearchParams]);
+  const {
+    targetId: resumeTarget,
+    ready: resumeReady,
+    resumeExact,
+  } = useResolvedResumeParam(scopedProfile);
+  const channel = useMemo(
+    () => generateChannelId(),
+    [resumeTarget, scopedProfile, resumeExact],
+  );
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 1023px)");
@@ -261,6 +240,7 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    if (!resumeReady) return;
 
     const token = window.__HERMES_SESSION_TOKEN__;
     const gated = !!window.__HERMES_AUTH_REQUIRED__;
@@ -552,7 +532,13 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
     void (async () => {
       const authParam = await buildWsAuthParam();
       if (unmounting) return;
-      const url = buildWsUrl(authParam, resumeParam, channel, scopedProfile);
+      const url = buildWsUrl(
+        authParam,
+        resumeTarget,
+        channel,
+        scopedProfile,
+        resumeExact,
+      );
       const ws = new WebSocket(url);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
@@ -690,7 +676,7 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
         copyResetRef.current = null;
       }
     };
-  }, [channel, resumeParam, scopedProfile]);
+  }, [channel, resumeTarget, scopedProfile, resumeReady, resumeExact]);
 
   // When the user returns to the chat tab (isActive: false → true), the
   // terminal host just transitioned from display:none to display:flex.

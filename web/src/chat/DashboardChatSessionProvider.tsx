@@ -13,6 +13,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { stripResumeParam, withResumeSession } from "@/lib/chatResumeUrl";
 import { useProfileScope } from "@/contexts/useProfileScope";
 
 import {
@@ -190,11 +191,20 @@ function TerminalSessionProvider({
     enabled: isActive,
   });
 
+  const resumeStoredSession = useCallback(
+    (storedId: string) => {
+      setSearchParams((prev) => withResumeSession(prev, storedId), {
+        replace: true,
+      });
+    },
+    [setSearchParams],
+  );
+
   const startNewChat = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("resume");
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+    setSearchParams((prev) => stripResumeParam(prev), {
+      replace: true,
+    });
+  }, [setSearchParams]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>
@@ -218,6 +228,7 @@ function TerminalSessionProvider({
     sessionEnded: false,
     request,
     startNewChat,
+    resumeStoredSession,
     surface: "terminal",
     sessionList,
     openSessionPalette,
