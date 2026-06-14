@@ -16,6 +16,7 @@ import {
   useLocation,
   useNavigate,
   useMatch,
+  useSearchParams,
 } from "react-router-dom";
 import {
   Activity,
@@ -103,8 +104,9 @@ import type { PluginManifest } from "@/plugins";
 import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
 import {
-  getResumeParamFromSearch,
-  shouldDrillChatSidebar,
+  hasSessionsSidebarParam,
+  withSessionsSidebarParam,
+  withoutSessionsSidebarParam,
 } from "@/lib/chatResumeUrl";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
@@ -350,6 +352,7 @@ const SIDEBAR_COLLAPSED_KEY = "hermes-sidebar-collapsed";
 export default function App() {
   const { t } = useI18n();
   const { pathname, search } = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const { manifests, loading: pluginsLoading } = usePlugins();
   const { theme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -378,9 +381,9 @@ export default function App() {
   const isDocsRoute = pathname === "/docs" || pathname === "/docs/";
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   const isChatRoute = normalizedPath === "/chat";
-  const chatResumeParam = useMemo(
-    () => getResumeParamFromSearch(search),
-    [search],
+  const chatSessionsSidebarOpen = useMemo(
+    () => isChatRoute && hasSessionsSidebarParam(search),
+    [isChatRoute, search],
   );
   const embeddedChat = isDashboardEmbeddedChatEnabled();
 
@@ -486,41 +489,24 @@ export default function App() {
 
   const chatSessionHost = embeddedChat && !chatOverriddenByPlugin;
 
-  const [chatSidebarDrilled, setChatSidebarDrilled] = useState(() =>
-    shouldDrillChatSidebar(pathname, search),
-  );
-
-  useEffect(() => {
-    if (!isChatRoute) {
-      setChatSidebarDrilled(false);
-      return;
-    }
-
-    if (!chatSessionHost || isDesktopCollapsed) return;
-
-    // Only `?resume=` puts the sidebar in session mode (reload / deep-link).
-    // Fresh `/chat` and the `/` → `/chat` redirect stay on normal nav; the user
-    // can open the session list via the Chat nav item (openChatSidebar).
-    if (chatResumeParam) {
-      setChatSidebarDrilled(true);
-    }
-  }, [
-    pathname,
-    isChatRoute,
-    chatSessionHost,
-    isDesktopCollapsed,
-    chatResumeParam,
-  ]);
-
   const showChatSessionsSidebar =
     chatSessionHost &&
-    isChatRoute &&
-    chatSidebarDrilled &&
+    chatSessionsSidebarOpen &&
     !isDesktopCollapsed;
 
   const openChatSidebar = useCallback(() => {
-    setChatSidebarDrilled(true);
-  }, []);
+    setSearchParams(
+      (prev) => withSessionsSidebarParam(prev),
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  const closeChatSidebar = useCallback(() => {
+    setSearchParams(
+      (prev) => withoutSessionsSidebarParam(prev),
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   const wrapChatSessionProvider = (children: ReactNode) =>
     chatSessionHost ? (
@@ -677,7 +663,7 @@ export default function App() {
             >
               {showChatSessionsSidebar ? (
                 <ChatSidebarSessionsView
-                  onBack={() => setChatSidebarDrilled(false)}
+                  onBack={closeChatSidebar}
                   closeMobile={closeMobile}
                 />
               ) : (

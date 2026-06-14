@@ -10,6 +10,7 @@ import {
   type ChatMessage,
   type SessionInflightTurn,
 } from "./chatMessages";
+import { clearChatSessionQueryParams } from "@/lib/chatResumeUrl";
 import type { BranchSeedMessage } from "@/lib/chatBranch";
 import type { SessionInfo } from "./useMessageStream";
 import { useResolvedResumeParam } from "./useResolvedResumeParam";
@@ -504,11 +505,7 @@ export function useChatGateway({
     setError(null);
     onHydratedRef.current?.([]);
     setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete("resume");
-        return next;
-      },
+      (prev) => clearChatSessionQueryParams(prev),
       { replace: true },
     );
     setVersion((v) => v + 1);
