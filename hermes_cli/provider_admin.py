@@ -54,9 +54,10 @@ def build_provider_schema(*, profile: Optional[str] = None) -> dict:
 def _row_to_source(row: dict, custom_entries: list) -> dict:
     slug = str(row.get("slug") or row.get("name") or "").lower()
     custom = _find_custom_by_slug(slug, custom_entries)
+    display_name = (custom or {}).get("name") or row.get("name") or slug
     return {
         "id": slug,
-        "name": row.get("name") or slug,
+        "name": display_name,
         "slug": slug,
         "authenticated": bool(row.get("authenticated", True)),
         "auth_type": row.get("auth_type"),

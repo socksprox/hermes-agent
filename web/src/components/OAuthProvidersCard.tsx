@@ -69,21 +69,26 @@ export function OAuthProvidersCard({
 
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
+  const onAuthChangeRef = useRef(onAuthChange);
+  onAuthChangeRef.current = onAuthChange;
+
+  const notifyAuthChange = useCallback(() => {
+    onAuthChangeRef.current?.();
+  }, []);
 
   const refresh = useCallback(() => {
     setLoading(true);
-    api
+    return api
       .getOAuthProviders()
       .then((resp) => setProviders(resp.providers))
       .catch((e) => onErrorRef.current?.(`Failed to load providers: ${e}`))
       .finally(() => {
         setLoading(false);
-        onAuthChange?.();
       });
-  }, [onAuthChange]);
+  }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   const handleDisconnect = async (provider: OAuthProvider) => {
@@ -92,7 +97,8 @@ export function OAuthProvidersCard({
     try {
       await api.disconnectOAuthProvider(provider.id);
       onSuccess?.(`${provider.name} ${t.oauth.disconnect.toLowerCase()}ed`);
-      refresh();
+      await refresh();
+      notifyAuthChange();
     } catch (e) {
       onError?.(`${t.oauth.disconnect} failed: ${e}`);
     } finally {
@@ -259,9 +265,12 @@ export function OAuthProvidersCard({
           provider={loginFor}
           onClose={() => {
             setLoginFor(null);
-            refresh();
+            void refresh();
           }}
-          onSuccess={(msg) => onSuccess?.(msg)}
+          onSuccess={(msg) => {
+            onSuccess?.(msg);
+            void refresh().then(() => notifyAuthChange());
+          }}
           onError={(msg) => onError?.(msg)}
         />
       )}

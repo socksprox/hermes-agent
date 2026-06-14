@@ -69,17 +69,29 @@ export function useProviderWorkbench(initialSourceId?: string) {
     }) => {
       setBusy(true);
       try {
-        if (selected?.is_user_defined && selectedId) {
-          await providerApi.updateSource(selectedId, body, profile);
+        let savedName: string | undefined;
+        if (selected?.is_user_defined && selectedId && selectedId !== "__new__") {
+          const res = await providerApi.updateSource(selectedId, body, profile);
+          savedName = res.name;
         } else {
-          await providerApi.createSource(body, profile);
+          const res = await providerApi.createSource(body, profile);
+          savedName = res.name;
         }
-        await load();
+        const fresh = await providerApi.getSchema(profile);
+        setSchema(fresh);
+        const match = fresh.sources.find(
+          (s) =>
+            s.id === savedName ||
+            s.slug === savedName ||
+            s.name === savedName,
+        );
+        setSelectedId(match?.id ?? savedName ?? null);
+        return savedName;
       } finally {
         setBusy(false);
       }
     },
-    [load, profile, selected?.is_user_defined, selectedId],
+    [profile, selected?.is_user_defined, selectedId],
   );
 
   const removeCustomSource = useCallback(async () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Card, CardContent } from "@nous-research/ui/ui/components/card";
 import { ProviderSourceRail } from "@/components/models/ProviderSourceRail";
@@ -27,6 +27,7 @@ export function ModelsProvidersTab({ onAssigned }: { onAssigned(): void }) {
   } = useProviderWorkbench(initialSource);
 
   const [addingCustom, setAddingCustom] = useState(false);
+  const onReload = useCallback(() => void reload(), [reload]);
 
   if (loading && !schema) {
     return (
@@ -49,18 +50,22 @@ export function ModelsProvidersTab({ onAssigned }: { onAssigned(): void }) {
   const sources = schema?.sources ?? [];
   const main = schema?.main ?? { provider: "", model: "" };
 
-  const displaySelected =
-    addingCustom
-      ? {
-          id: "__new__",
-          name: "New endpoint",
-          slug: "custom",
-          authenticated: false,
-          models: [],
-          is_user_defined: true,
-          base_url: "",
-        }
-      : selected;
+  const displaySelected = addingCustom
+    ? {
+        id: "__new__",
+        name: "",
+        slug: "custom",
+        authenticated: false,
+        models: [],
+        is_user_defined: true,
+        base_url: "",
+      }
+    : selected;
+
+  const handleSaveCustom = async (body: Parameters<typeof saveCustomSource>[0]) => {
+    await saveCustomSource(body);
+    setAddingCustom(false);
+  };
 
   return (
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(12rem,16rem)_1fr]">
@@ -84,9 +89,9 @@ export function ModelsProvidersTab({ onAssigned }: { onAssigned(): void }) {
               <ProviderConnectionForm
                 source={displaySelected}
                 busy={busy}
-                onSaveCustom={saveCustomSource}
+                onSaveCustom={handleSaveCustom}
                 onRemoveCustom={removeCustomSource}
-                onReload={() => void reload()}
+                onReload={onReload}
               />
               {!addingCustom && (
                 <ProviderModelTable

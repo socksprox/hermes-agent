@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Input } from "@nous-research/ui/ui/components/input";
@@ -35,13 +35,33 @@ export function ProviderConnectionForm({
 }: Props) {
   const { t } = useI18n();
   const { profile: activeProfile } = useProfileScope();
+  const isNew = source.id === "__new__";
+  const [displayName, setDisplayName] = useState("");
   const [baseUrl, setBaseUrl] = useState(source.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
   const [testing, setTesting] = useState(false);
   const [testMsg, setTestMsg] = useState<string | null>(null);
 
-  const isCustom = source.is_user_defined || source.id === "custom";
+  const isCustom = source.is_user_defined || source.id === "custom" || isNew;
+
+  useEffect(() => {
+    setBaseUrl(source.base_url ?? "");
+    setApiKey("");
+    setModel("");
+    setTestMsg(null);
+    if (isNew) {
+      setDisplayName("");
+      return;
+    }
+    const raw = (source.name ?? "").trim();
+    // Legacy/generic labels from the picker — let the user pick a real name.
+    const generic =
+      /^custom endpoint$/i.test(raw) ||
+      /^new endpoint$/i.test(raw) ||
+      raw.toLowerCase() === source.slug;
+    setDisplayName(generic ? "" : raw);
+  }, [source.id, source.name, source.base_url, source.slug, isNew]);
 
   const testConnection = async () => {
     setTesting(true);
@@ -80,7 +100,9 @@ export function ProviderConnectionForm({
     <div className="space-y-4">
       <div>
         <h3 className="font-mondwest text-display text-sm tracking-wider">
-          {source.name}
+          {isNew
+            ? "New custom endpoint"
+            : displayName.trim() || source.name}
         </h3>
         {source.base_url && (
           <p className="text-xs font-mono text-text-secondary truncate mt-0.5">
@@ -136,6 +158,20 @@ export function ProviderConnectionForm({
       {isCustom && (
         <div className="space-y-3 border border-border/50 p-3">
           <div className="space-y-1.5">
+            <Label htmlFor="custom-display-name">Display name</Label>
+            <Input
+              id="custom-display-name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Local Ollama, Work vLLM"
+              className="text-sm"
+            />
+            <p className="text-[11px] text-text-tertiary">
+              Shown in the provider list and model picker. Leave blank to
+              auto-name from the URL.
+            </p>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="custom-base-url">Base URL</Label>
             <Input
               id="custom-base-url"
@@ -173,7 +209,7 @@ export function ProviderConnectionForm({
                   base_url: baseUrl.trim(),
                   api_key: apiKey.trim(),
                   model: model.trim(),
-                  name: source.name,
+                  name: displayName.trim() || undefined,
                 })
               }
             >
@@ -188,7 +224,7 @@ export function ProviderConnectionForm({
             >
               Test
             </Button>
-            {source.is_user_defined && (
+            {source.is_user_defined && !isNew && (
               <Button
                 size="sm"
                 outlined
