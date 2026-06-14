@@ -187,16 +187,24 @@ function HistoryRow({
           </Button>
         </div>
       ) : (
-        <SessionRowButton active={active} onClick={() => onResume(item.id)}>
-          <SourceIcon source={item.source} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium">{title}</span>
-            <span className="block truncate text-[11px] text-text-tertiary">
-              {item.source ?? "local"} ·{" "}
-              {relativeSessionAge(item.started_at)}
+        <>
+          <SessionRowButton active={active} onClick={() => onResume(item.id)}>
+            <SourceIcon source={item.source} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{title}</span>
+              <span className="block truncate text-[11px] text-text-tertiary">
+                {item.source ?? "local"} ·{" "}
+                {relativeSessionAge(item.started_at)}
+              </span>
             </span>
-          </span>
-          <span className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          </SessionRowButton>
+          <div
+            className={cn(
+              "absolute inset-y-0 right-1 flex items-center gap-0.5 pl-4",
+              "bg-gradient-to-l from-background via-background/95 to-transparent",
+              "pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100",
+            )}
+          >
             <Button
               type="button"
               ghost
@@ -225,8 +233,8 @@ function HistoryRow({
             >
               <Trash2 className="h-3 w-3" />
             </Button>
-          </span>
-        </SessionRowButton>
+          </div>
+        </>
       )}
     </div>
   );
