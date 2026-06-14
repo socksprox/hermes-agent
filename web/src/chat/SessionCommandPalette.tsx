@@ -16,6 +16,32 @@ import { useProfileScope } from "@/contexts/useProfileScope";
 import { sessionDisplayTitle } from "./sessionListCore";
 import { useChatSession } from "./ChatSessionContext";
 
+/** FTS5 snippets wrap matches in >>> and <<< delimiters. */
+function SearchSnippetHighlight({ snippet }: { snippet: string }) {
+  const parts: React.ReactNode[] = [];
+  const regex = />>>(.*?)<<</g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  while ((match = regex.exec(snippet)) !== null) {
+    if (match.index > last) {
+      parts.push(snippet.slice(last, match.index));
+    }
+    parts.push(
+      <mark key={i++} className="bg-warning/30 px-0.5 text-warning">
+        {match[1]}
+      </mark>,
+    );
+    last = regex.lastIndex;
+  }
+  if (last < snippet.length) {
+    parts.push(snippet.slice(last));
+  }
+  return (
+    <span className="truncate text-xs text-text-tertiary">{parts}</span>
+  );
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -27,7 +53,7 @@ export function SessionCommandPalette({ open, onClose }: Props) {
   const { resumeStoredSession } = useChatSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<
-    { session_id: string; snippet: string }[]
+    { session_id: string; snippet: string; title?: string | null }[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -144,15 +170,13 @@ export function SessionCommandPalette({ open, onClose }: Props) {
               >
                 <span className="truncate font-medium">
                   {sessionDisplayTitle(
+                    row.title ?? undefined,
                     undefined,
-                    row.snippet,
                     t.chatSession.untitledSession,
                   )}
                 </span>
-                {row.snippet && (
-                  <span className="truncate text-xs text-text-tertiary">
-                    {row.snippet}
-                  </span>
+                {row.snippet?.trim() && (
+                  <SearchSnippetHighlight snippet={row.snippet} />
                 )}
               </button>
             ))}

@@ -2879,6 +2879,7 @@ async def search_sessions(q: str = "", limit: int = 20, profile: Optional[str] =
                     sid,
                     {
                         "snippet": snippet,
+                        "title": row.get("title"),
                         "role": None,
                         "source": row.get("source"),
                         "model": row.get("model"),
@@ -2909,6 +2910,7 @@ async def search_sessions(q: str = "", limit: int = 20, profile: Optional[str] =
                     m["session_id"],
                     {
                         "snippet": m.get("snippet", ""),
+                        "title": m.get("title"),
                         "role": m.get("role"),
                         "source": m.get("source"),
                         "model": m.get("model"),

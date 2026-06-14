@@ -1961,6 +1961,7 @@ export interface ToolsetEnvResult {
 export interface SessionSearchResult {
   session_id: string;
   snippet: string;
+  title?: string | null;
   role: string | null;
   source: string | null;
   model: string | null;
