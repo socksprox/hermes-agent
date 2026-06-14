@@ -50,7 +50,7 @@ interface Props {
 export function SessionCommandPalette({ open, onClose }: Props) {
   const { t } = useI18n();
   const { profile } = useProfileScope();
-  const { resumeStoredSession } = useChatSession();
+  const { resumeStoredSession, sessionList } = useChatSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<
     { session_id: string; snippet: string; title?: string | null }[]
@@ -94,6 +94,20 @@ export function SessionCommandPalette({ open, onClose }: Props) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query, open, profile]);
+
+  const resolveSessionTitle = useCallback(
+    (sessionId: string, title?: string | null) => {
+      const direct = (title ?? "").trim();
+      if (direct) return direct;
+      const fromHistory = sessionList.history.find((s) => s.id === sessionId);
+      if (fromHistory?.title?.trim()) return fromHistory.title.trim();
+      const fromLive = sessionList.live.find(
+        (s) => s.id === sessionId || s.session_key === sessionId,
+      );
+      return (fromLive?.title ?? "").trim() || undefined;
+    },
+    [sessionList.history, sessionList.live],
+  );
 
   const resumeSession = useCallback(
     (id: string) => {
@@ -170,7 +184,7 @@ export function SessionCommandPalette({ open, onClose }: Props) {
               >
                 <span className="truncate font-medium">
                   {sessionDisplayTitle(
-                    row.title ?? undefined,
+                    resolveSessionTitle(row.session_id, row.title),
                     undefined,
                     t.chatSession.untitledSession,
                   )}
