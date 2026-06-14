@@ -345,7 +345,7 @@ const SIDEBAR_COLLAPSED_KEY = "hermes-sidebar-collapsed";
 
 export default function App() {
   const { t } = useI18n();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { manifests, loading: pluginsLoading } = usePlugins();
   const { theme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -374,6 +374,10 @@ export default function App() {
   const isDocsRoute = pathname === "/docs" || pathname === "/docs/";
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   const isChatRoute = normalizedPath === "/chat";
+  const chatResumeParam = useMemo(
+    () => new URLSearchParams(search).get("resume"),
+    [search],
+  );
   const embeddedChat = isDashboardEmbeddedChatEnabled();
 
   // `dashboard.show_token_analytics` gates the Analytics nav item.  The
@@ -491,10 +495,21 @@ export default function App() {
       return;
     }
 
-    if (!wasChat && isChatRoute && chatSessionHost && !isDesktopCollapsed) {
+    if (
+      isChatRoute &&
+      chatSessionHost &&
+      !isDesktopCollapsed &&
+      (chatResumeParam || !wasChat)
+    ) {
       setChatSidebarDrilled(true);
     }
-  }, [pathname, isChatRoute, chatSessionHost, isDesktopCollapsed]);
+  }, [
+    pathname,
+    isChatRoute,
+    chatSessionHost,
+    isDesktopCollapsed,
+    chatResumeParam,
+  ]);
 
   const showChatSessionsSidebar =
     chatSessionHost &&
