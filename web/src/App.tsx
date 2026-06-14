@@ -102,6 +102,10 @@ import { PluginPage, PluginSlot, usePlugins } from "@/plugins";
 import type { PluginManifest } from "@/plugins";
 import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
+import {
+  getResumeParamFromSearch,
+  shouldDrillChatSidebar,
+} from "@/lib/chatResumeUrl";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
 
@@ -375,7 +379,7 @@ export default function App() {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   const isChatRoute = normalizedPath === "/chat";
   const chatResumeParam = useMemo(
-    () => new URLSearchParams(search).get("resume"),
+    () => getResumeParamFromSearch(search),
     [search],
   );
   const embeddedChat = isDashboardEmbeddedChatEnabled();
@@ -482,25 +486,22 @@ export default function App() {
 
   const chatSessionHost = embeddedChat && !chatOverriddenByPlugin;
 
-  const [chatSidebarDrilled, setChatSidebarDrilled] = useState(false);
-  const prevPathnameRef = useRef(pathname);
+  const [chatSidebarDrilled, setChatSidebarDrilled] = useState(() =>
+    shouldDrillChatSidebar(pathname, search),
+  );
 
   useEffect(() => {
-    const prevNorm = prevPathnameRef.current.replace(/\/$/, "") || "/";
-    const wasChat = prevNorm === "/chat";
-    prevPathnameRef.current = pathname;
-
     if (!isChatRoute) {
       setChatSidebarDrilled(false);
       return;
     }
 
-    if (
-      isChatRoute &&
-      chatSessionHost &&
-      !isDesktopCollapsed &&
-      (chatResumeParam || !wasChat)
-    ) {
+    if (!chatSessionHost || isDesktopCollapsed) return;
+
+    // Only `?resume=` puts the sidebar in session mode (reload / deep-link).
+    // Fresh `/chat` and the `/` → `/chat` redirect stay on normal nav; the user
+    // can open the session list via the Chat nav item (openChatSidebar).
+    if (chatResumeParam) {
       setChatSidebarDrilled(true);
     }
   }, [

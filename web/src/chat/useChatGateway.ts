@@ -12,6 +12,7 @@ import {
 } from "./chatMessages";
 import type { BranchSeedMessage } from "@/lib/chatBranch";
 import type { SessionInfo } from "./useMessageStream";
+import { useResolvedResumeParam } from "./useResolvedResumeParam";
 
 interface SessionResumeResponse {
   session_id: string;
@@ -74,8 +75,10 @@ export function useChatGateway({
   onHydrated,
   onSessionInfo,
 }: UseChatGatewayOptions) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const resumeParam = searchParams.get("resume");
+  const [, setSearchParams] = useSearchParams();
+  const { resumeParam, targetId, ready: resumeReady } = useResolvedResumeParam(
+    profile,
+  );
 
   const [version, setVersion] = useState(0);
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
@@ -306,34 +309,6 @@ export function useChatGateway({
 
   bindSessionRef.current = bindSession;
 
-  useEffect(() => {
-    if (!resumeParam) return;
-
-    let cancelled = false;
-
-    api
-      .getSessionLatestDescendant(resumeParam, profile)
-      .then((res) => {
-        if (cancelled || !res.session_id || res.session_id === resumeParam) {
-          return;
-        }
-        persistUrlSyncRef.current = true;
-        setSearchParams(
-          (prev) => {
-            const next = new URLSearchParams(prev);
-            next.set("resume", res.session_id);
-            return next;
-          },
-          { replace: true },
-        );
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [resumeParam, profile, setSearchParams]);
-
   // WebSocket lifecycle — only reconnect when the client instance changes.
   useEffect(() => {
     wantReconnectRef.current = true;
@@ -380,6 +355,7 @@ export function useChatGateway({
   // full reload at /chat.
   useEffect(() => {
     if (!isActive) return;
+    if (!resumeReady) return;
 
     if (suppressResumeBindRef.current) {
       if (resumeParam) {
@@ -392,7 +368,7 @@ export function useChatGateway({
     }
 
     // Live session with no ?resume= — keep it when returning from another tab.
-    if (!resumeParam && sessionIdRef.current) {
+    if (!targetId && sessionIdRef.current) {
       if (gw.state === "open") {
         return;
       }
@@ -406,18 +382,18 @@ export function useChatGateway({
     }
 
     const alreadyOnThisSession =
-      !!resumeParam &&
-      storedIdRef.current === resumeParam &&
+      !!targetId &&
+      storedIdRef.current === targetId &&
       !!sessionIdRef.current &&
       gw.state === "open";
 
     if (!alreadyOnThisSession) {
       if (bootingRef.current) return;
-      void bindSession(resumeParam, { resume: !!resumeParam });
+      void bindSession(targetId, { resume: !!targetId });
     } else {
       setError(null);
     }
-  }, [gw, resumeParam, profile, bindSession, isActive]);
+  }, [gw, targetId, resumeReady, resumeParam, profile, bindSession, isActive]);
 
   const request = useCallback(
     <T,>(method: string, params: Record<string, unknown> = {}) =>
