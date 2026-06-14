@@ -251,10 +251,10 @@ export function DashboardChatSessionProvider({ isActive, children }: Props) {
         if (cancelled) return;
         const raw = (cfg.display as { dashboard_chat_surface?: string } | undefined)
           ?.dashboard_chat_surface;
-        setSurface(raw === "terminal" ? "terminal" : "rich");
+        setSurface(raw === "rich" ? "rich" : "terminal");
       })
       .catch(() => {
-        if (!cancelled) setSurface("rich");
+        if (!cancelled) setSurface("terminal");
       });
     return () => {
       cancelled = true;

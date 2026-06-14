@@ -477,7 +477,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "display.dashboard_chat_surface": {
         "type": "select",
         "description": "Dashboard chat surface — reload the Chat tab after changing",
-        "options": ["rich", "terminal"],
+        "options": ["terminal", "rich"],
     },
     "memory.provider": {
         "type": "select",
