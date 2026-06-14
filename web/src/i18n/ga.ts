@@ -75,6 +75,7 @@ export const ga: Translations = {
       keys: "Eochracha",
       logs: "Logaí",
       models: "Samhlacha",
+      modelsAndProviders: "Models & Providers",
       profiles: "próifílí : il-agents",
       plugins: "Plugins",
       sessions: "Seisiúin",

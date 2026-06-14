@@ -25,6 +25,9 @@ import { useI18n } from "@/i18n";
 interface Props {
   onError?: (msg: string) => void;
   onSuccess?: (msg: string) => void;
+  filterProviderId?: string;
+  onAuthChange?: () => void;
+  compact?: boolean;
 }
 
 function formatExpiresAt(
@@ -49,7 +52,13 @@ function formatExpiresAt(
   }
 }
 
-export function OAuthProvidersCard({ onError, onSuccess }: Props) {
+export function OAuthProvidersCard({
+  onError,
+  onSuccess,
+  filterProviderId,
+  onAuthChange,
+  compact = false,
+}: Props) {
   const [providers, setProviders] = useState<OAuthProvider[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -67,8 +76,11 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
       .getOAuthProviders()
       .then((resp) => setProviders(resp.providers))
       .catch((e) => onErrorRef.current?.(`Failed to load providers: ${e}`))
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        setLoading(false);
+        onAuthChange?.();
+      });
+  }, [onAuthChange]);
 
   useEffect(() => {
     refresh();
@@ -92,46 +104,24 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
     providers?.filter((p) => p.status.logged_in).length ?? 0;
   const totalCount = providers?.length ?? 0;
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-base">
-              {t.oauth.providerLogins}
-            </CardTitle>
-          </div>
-          <Button
-            ghost
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={refresh}
-            disabled={loading}
-            aria-label={t.common.refresh}
-          >
-            {loading ? <Spinner /> : <RefreshCw />}
-          </Button>
-        </div>
-        <CardDescription>
-          {t.oauth.description
-            .replace("{connected}", String(connectedCount))
-            .replace("{total}", String(totalCount))}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+  const visibleProviders = filterProviderId
+    ? (providers?.filter((p) => p.id === filterProviderId) ?? [])
+    : (providers ?? []);
+
+  const listBody = (
+    <>
         {loading && providers === null && (
           <div className="flex items-center justify-center py-8">
             <Spinner className="text-xl text-primary" />
           </div>
         )}
-        {providers && providers.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {t.oauth.noProviders}
+        {visibleProviders.length === 0 && !loading && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {filterProviderId ? "No OAuth login for this provider." : t.oauth.noProviders}
           </p>
         )}
         <div className="flex flex-col divide-y divide-border">
-          {providers?.map((p) => {
+          {visibleProviders.map((p) => {
             const expiresLabel = formatExpiresAt(
               p.status.expires_at,
               t.oauth.expiresIn,
@@ -259,7 +249,11 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
             );
           })}
         </div>
-      </CardContent>
+    </>
+  );
+
+  const modals = (
+    <>
       {loginFor && (
         <OAuthLoginModal
           provider={loginFor}
@@ -282,6 +276,49 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
         destructive
         confirmLabel={t.oauth.disconnect}
       />
+    </>
+  );
+
+  if (compact) {
+    return (
+      <div className="border border-border/50 p-3 space-y-2">
+        {listBody}
+        {modals}
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">
+              {t.oauth.providerLogins}
+            </CardTitle>
+          </div>
+          <Button
+            ghost
+            size="icon"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={refresh}
+            disabled={loading}
+            aria-label={t.common.refresh}
+          >
+            {loading ? <Spinner /> : <RefreshCw />}
+          </Button>
+        </div>
+        <CardDescription>
+          {t.oauth.description
+            .replace("{connected}", String(connectedCount))
+            .replace("{total}", String(totalCount))}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {listBody}
+      </CardContent>
+      {modals}
     </Card>
   );
 }

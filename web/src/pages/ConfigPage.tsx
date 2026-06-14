@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { modelsTabHref } from "@/lib/models-routes";
 import {
   Code,
   Download,
@@ -416,6 +418,14 @@ export default function ConfigPage() {
               value={getNestedValue(config, key)}
               onChange={(v) => setConfig(setNestedValue(config, key, v))}
             />
+            {key === "model" && (
+              <Link
+                to={modelsTabHref("assignments")}
+                className="mt-1 inline-block text-xs text-text-secondary underline hover:text-foreground"
+              >
+                Manage in Models &amp; Providers
+              </Link>
+            )}
           </div>
         </div>
       );

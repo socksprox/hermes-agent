@@ -75,6 +75,7 @@ const PROFILE_SCOPED_PREFIXES = [
   "/api/model/set",
   "/api/model/auxiliary",
   "/api/model/options",
+  "/api/providers",
 ];
 
 function withManagementProfile(url: string): string {
@@ -303,7 +304,7 @@ function profileQuery(profile?: string): string {
   return profile ? `?profile=${encodeURIComponent(profile)}` : "";
 }
 
-function appendProfileParam(url: string, profile?: string): string {
+export function appendProfileParam(url: string, profile?: string): string {
   if (!profile || url.includes("profile=")) return url;
   return `${url}${url.includes("?") ? "&" : "?"}profile=${encodeURIComponent(profile)}`;
 }
@@ -451,6 +452,10 @@ export const api = {
   getSchema: () => fetchJSON<{ fields: Record<string, unknown>; category_order: string[] }>("/api/config/schema"),
   getModelInfo: () => fetchJSON<ModelInfoResponse>("/api/model/info"),
   getModelOptions: () => fetchJSON<ModelOptionsResponse>("/api/model/options"),
+  getRecommendedDefault: (provider: string) =>
+    fetchJSON<{ provider: string; model: string; free_tier: boolean | null }>(
+      `/api/model/recommended-default?provider=${encodeURIComponent(provider)}`,
+    ),
   getAuxiliaryModels: () => fetchJSON<AuxiliaryModelsResponse>("/api/model/auxiliary"),
   setModelAssignment: (body: ModelAssignmentRequest) =>
     fetchJSON<ModelAssignmentResponse>("/api/model/set", {

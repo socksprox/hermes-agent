@@ -75,6 +75,7 @@ export const hu: Translations = {
       keys: "Kulcsok",
       logs: "Naplók",
       models: "Modellek",
+      modelsAndProviders: "Models & Providers",
       profiles: "profilok: több ügynök",
       plugins: "Bővítmények",
       sessions: "Munkamenetek",

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GatewayClient } from "@/lib/gatewayClient";
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
@@ -7,7 +8,8 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { fuzzyRank } from "@/lib/fuzzy";
 import { cn } from "@/lib/utils";
 import { Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { modelsTabHref } from "@/lib/models-routes";
 import { createPortal } from "react-dom";
 
 import {
@@ -218,21 +220,30 @@ export function ModelMenuPopover({ gw, sessionId, onClose }: Props) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-t border-border/30 px-3 py-2">
-              <Label className="flex items-center gap-2 text-xs">
-                <Checkbox
-                  checked={persistGlobal}
-                  onCheckedChange={(v) => setPersistGlobal(v === true)}
-                />
-                Persist globally
-              </Label>
-              <Button
-                onClick={() => void runApply()}
-                disabled={!selectedModel || applying}
-                size="sm"
+            <div className="flex flex-col gap-2 border-t border-border/30 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-2 text-xs">
+                  <Checkbox
+                    checked={persistGlobal}
+                    onCheckedChange={(v) => setPersistGlobal(v === true)}
+                  />
+                  Persist globally
+                </Label>
+                <Button
+                  onClick={() => void runApply()}
+                  disabled={!selectedModel || applying}
+                  size="sm"
+                >
+                  Apply
+                </Button>
+              </div>
+              <Link
+                to={modelsTabHref("providers")}
+                className="text-xs text-text-secondary underline hover:text-foreground"
+                onClick={onClose}
               >
-                Apply
-              </Button>
+                Manage providers…
+              </Link>
             </div>
           </>
         )}

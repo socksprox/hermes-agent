@@ -6,7 +6,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { modelsTabHref } from "@/lib/models-routes";
 import {
   AlignLeft,
   Check,
@@ -1296,6 +1297,22 @@ export default function ProfilesPage() {
                         </SelectOption>
                       ))}
                     </Select>
+
+                    <p className="text-xs text-muted-foreground">
+                      <Link
+                        to={modelsTabHref("providers")}
+                        className="underline"
+                      >
+                        Configure providers
+                      </Link>
+                      {" · "}
+                      <Link
+                        to={modelsTabHref("assignments")}
+                        className="underline"
+                      >
+                        Model assignments
+                      </Link>
+                    </p>
 
                     <div className="flex justify-end">
                       <Button

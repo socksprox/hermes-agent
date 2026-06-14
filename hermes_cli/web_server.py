@@ -655,6 +655,31 @@ class EnvVarReveal(BaseModel):
     profile: Optional[str] = None
 
 
+class ProviderSourceUpsert(BaseModel):
+    name: Optional[str] = None
+    base_url: str
+    model: str = ""
+    api_mode: str = ""
+    api_key: str = ""
+    profile: Optional[str] = None
+
+
+class ProviderSourceUpdate(BaseModel):
+    name: Optional[str] = None
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+    api_mode: Optional[str] = None
+    profile: Optional[str] = None
+
+
+class ProviderTestRequest(BaseModel):
+    key: str = ""
+    value: str = ""
+    api_key: str = ""
+    base_url: str = ""
+    profile: Optional[str] = None
+
+
 class MessagingPlatformUpdate(BaseModel):
     enabled: Optional[bool] = None
     env: Dict[str, str] = {}
@@ -3671,6 +3696,140 @@ async def validate_provider_credential(body: EnvVarUpdate, request: Request):
         # 429 = key is valid but rate-limited; success = valid.
         return {"ok": True, "reachable": True, "message": ""}
     return {"ok": False, "reachable": True, "message": f"Provider returned HTTP {resp.status_code} for this key."}
+
+
+@app.get("/api/providers/schema")
+def get_providers_schema(profile: Optional[str] = None):
+    """Full provider workbench payload for the Models & Providers dashboard."""
+    try:
+        from hermes_cli.provider_admin import build_provider_schema
+
+        with _profile_scope(profile):
+            return build_provider_schema(profile=profile)
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("GET /api/providers/schema failed")
+        raise HTTPException(status_code=500, detail="Failed to load provider schema")
+
+
+@app.post("/api/providers/sources")
+def create_provider_source(body: ProviderSourceUpsert, profile: Optional[str] = None):
+    try:
+        from hermes_cli.provider_admin import upsert_custom_source
+
+        with _profile_scope(body.profile or profile):
+            return upsert_custom_source(
+                name=body.name,
+                base_url=body.base_url,
+                model=body.model,
+                api_mode=body.api_mode,
+                api_key=body.api_key,
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("POST /api/providers/sources failed")
+        raise HTTPException(status_code=500, detail="Failed to create provider source")
+
+
+@app.put("/api/providers/sources/{source_id}")
+def update_provider_source(
+    source_id: str, body: ProviderSourceUpdate, profile: Optional[str] = None
+):
+    try:
+        from hermes_cli.provider_admin import upsert_custom_source
+
+        with _profile_scope(body.profile or profile):
+            if not body.base_url:
+                raise HTTPException(status_code=400, detail="base_url is required")
+            return upsert_custom_source(
+                name=body.name or source_id,
+                base_url=body.base_url,
+                model=body.model or "",
+                api_mode=body.api_mode or "",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("PUT /api/providers/sources/%s failed", source_id)
+        raise HTTPException(status_code=500, detail="Failed to update provider source")
+
+
+@app.delete("/api/providers/sources/{source_id}")
+def delete_provider_source(source_id: str, profile: Optional[str] = None):
+    try:
+        from hermes_cli.provider_admin import delete_custom_source
+
+        with _profile_scope(profile):
+            return delete_custom_source(source_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("DELETE /api/providers/sources/%s failed", source_id)
+        raise HTTPException(status_code=500, detail="Failed to delete provider source")
+
+
+@app.get("/api/providers/sources/{source_id}/models")
+def get_provider_source_models(source_id: str, profile: Optional[str] = None):
+    try:
+        from hermes_cli.provider_admin import fetch_live_models_for_source
+
+        with _profile_scope(profile):
+            return fetch_live_models_for_source(source_id)
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("GET /api/providers/sources/%s/models failed", source_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch models")
+
+
+@app.post("/api/providers/test")
+async def test_provider_connection(
+    body: ProviderTestRequest, request: Request, profile: Optional[str] = None
+):
+    """Connectivity test — same probes as POST /api/providers/validate."""
+    _require_token(request)
+    probe_key = body.key
+    probe_value = body.value
+    if body.base_url and not probe_key:
+        probe_key = "OPENAI_BASE_URL"
+        probe_value = body.base_url
+    return await validate_provider_credential(
+        EnvVarUpdate(
+            key=probe_key,
+            value=probe_value,
+            api_key=body.api_key,
+            profile=body.profile or profile,
+        ),
+        request,
+    )
+
+
+@app.put("/api/providers/accounts/{provider_id}")
+def clear_provider_account_endpoint(
+    provider_id: str, profile: Optional[str] = None
+):
+    try:
+        from hermes_cli.provider_admin import clear_provider_account
+
+        with _profile_scope(profile):
+            result = clear_provider_account(provider_id)
+        if not result.get("ok"):
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("message", "Could not remove provider account"),
+            )
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("PUT /api/providers/accounts/%s failed", provider_id)
+        raise HTTPException(status_code=500, detail="Failed to remove provider account")
 
 
 @app.delete("/api/env")

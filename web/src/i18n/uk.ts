@@ -75,6 +75,7 @@ export const uk: Translations = {
       keys: "Ключі",
       logs: "Журнали",
       models: "Моделі",
+      modelsAndProviders: "Models & Providers",
       profiles: "профілі: мульти-агенти",
       plugins: "Плагіни",
       sessions: "Сесії",

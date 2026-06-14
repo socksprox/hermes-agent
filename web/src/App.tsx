@@ -173,8 +173,8 @@ const BUILTIN_NAV_REST: NavItem[] = [
   },
   {
     path: "/models",
-    labelKey: "models",
-    label: "Models",
+    labelKey: "modelsAndProviders",
+    label: "Models & Providers",
     icon: Cpu,
   },
   { path: "/logs", labelKey: "logs", label: "Logs", icon: FileText },

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, RefreshCw, Trash2, Eye, EyeOff } from "lucide-react";
 import type { Translations } from "@/i18n/types";
 import { Link } from "react-router-dom";
+import { modelsTabHref } from "@/lib/models-routes";
 import { api } from "@/lib/api";
 import type { HubAgentPluginRow, PluginsHubResponse } from "@/lib/api";
 import { Button } from "@nous-research/ui/ui/components/button";
@@ -159,7 +160,14 @@ export default function PluginsPage() {
             <CardHeader>
               <CardTitle>{t.pluginsPage.providersHeading}</CardTitle>
               <p className="text-xs tracking-[0.08em] text-text-tertiary">
-                {t.pluginsPage.providersHint}
+                {t.pluginsPage.providersHint}{" "}
+                <Link to={modelsTabHref("memory")} className="underline">
+                  Memory tab
+                </Link>
+                {" · "}
+                <Link to={modelsTabHref("context")} className="underline">
+                  Context tab
+                </Link>
               </p>
             </CardHeader>
 

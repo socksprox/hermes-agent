@@ -74,6 +74,7 @@ export const zh: Translations = {
       keys: "密钥",
       logs: "日志",
       models: "模型",
+      modelsAndProviders: "Models & Providers",
       profiles: "多Agent配置",
       plugins: "插件管理",
       sessions: "会话",

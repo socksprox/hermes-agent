@@ -95,6 +95,7 @@ export interface Translations {
       keys: string;
       logs: string;
       models: string;
+      modelsAndProviders: string;
       profiles: string;
       plugins: string;
       sessions: string;

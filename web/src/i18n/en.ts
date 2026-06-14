@@ -78,6 +78,7 @@ export const en: Translations = {
       keys: "Keys",
       logs: "Logs",
       models: "Models",
+      modelsAndProviders: "Models & Providers",
       profiles: "Profiles",
       plugins: "Plugins",
       sessions: "Sessions",
