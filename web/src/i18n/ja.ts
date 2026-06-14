@@ -176,7 +176,7 @@ export const ja: Translations = {
     renameSession: "セッションの名前を変更",
     deleteSession: "セッションを削除",
     untitledSession: "無題のセッション",
-    liveSessions: "ライブ",
+    openSessions: "開いている",
     recentSessions: "最近",
     noSessions: "まだセッションがありません",
     noMatch: "一致するセッションがありません",

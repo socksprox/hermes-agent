@@ -176,7 +176,7 @@ export const fr: Translations = {
     renameSession: "Renommer la session",
     deleteSession: "Supprimer la session",
     untitledSession: "Session sans titre",
-    liveSessions: "En direct",
+    openSessions: "Ouvert",
     recentSessions: "Récentes",
     noSessions: "Aucune session pour l'instant",
     noMatch: "Aucune session correspondante",

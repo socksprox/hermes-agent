@@ -176,7 +176,7 @@ export const ru: Translations = {
     renameSession: "Переименовать сессию",
     deleteSession: "Удалить сессию",
     untitledSession: "Сессия без названия",
-    liveSessions: "В сети",
+    openSessions: "Открытые",
     recentSessions: "Недавние",
     noSessions: "Сессий пока нет",
     noMatch: "Нет подходящих сессий",

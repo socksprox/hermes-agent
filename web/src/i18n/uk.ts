@@ -176,7 +176,7 @@ export const uk: Translations = {
     renameSession: "Перейменувати сесію",
     deleteSession: "Видалити сесію",
     untitledSession: "Сесія без назви",
-    liveSessions: "Наживо",
+    openSessions: "Відкриті",
     recentSessions: "Нещодавні",
     noSessions: "Поки немає сесій",
     noMatch: "Немає відповідних сесій",

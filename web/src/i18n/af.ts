@@ -176,7 +176,7 @@ export const af: Translations = {
     renameSession: "Hernoem sessie",
     deleteSession: "Skrap sessie",
     untitledSession: "Sessie sonder titel",
-    liveSessions: "Lewendig",
+    openSessions: "Oop",
     recentSessions: "Onlangs",
     noSessions: "Nog geen sessies nie",
     noMatch: "Geen ooreenstemmende sessies",

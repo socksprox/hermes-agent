@@ -176,7 +176,7 @@ export const hu: Translations = {
     renameSession: "Munkamenet átnevezése",
     deleteSession: "Munkamenet törlése",
     untitledSession: "Névtelen munkamenet",
-    liveSessions: "Élő",
+    openSessions: "Nyitott",
     recentSessions: "Legutóbbi",
     noSessions: "Még nincsenek munkamenetek",
     noMatch: "Nincs egyező munkamenet",

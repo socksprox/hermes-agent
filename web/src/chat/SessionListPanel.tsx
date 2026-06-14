@@ -333,7 +333,7 @@ export function SessionListPanel({
         {live.length > 0 && (
           <div className="mt-2">
             <p className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wide text-text-tertiary">
-              {t.chatSession.liveSessions}
+              {t.chatSession.openSessions}
             </p>
             {live.map((item) => (
               <LiveRow

@@ -176,7 +176,7 @@ export const zhHant: Translations = {
     renameSession: "重新命名工作階段",
     deleteSession: "刪除工作階段",
     untitledSession: "未命名工作階段",
-    liveSessions: "線上",
+    openSessions: "已開啟",
     recentSessions: "最近",
     noSessions: "尚無工作階段",
     noMatch: "沒有符合的工作階段",

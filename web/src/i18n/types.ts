@@ -200,7 +200,7 @@ export interface Translations {
     renameSession: string;
     deleteSession: string;
     untitledSession: string;
-    liveSessions: string;
+    openSessions: string;
     recentSessions: string;
     noSessions: string;
     noMatch: string;

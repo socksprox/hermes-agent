@@ -1,7 +1,7 @@
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Search } from "lucide-react";
+import { ChevronLeft, Plus, Search, Terminal } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 
@@ -49,47 +49,51 @@ export function ChatSidebarSessionsView({
     <div
       className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}
     >
-      <div className="flex shrink-0 items-center gap-1 border-b border-current/10 px-1 py-1.5">
+      <div className="flex shrink-0 items-center gap-3 border-b border-current/10 px-5 py-2.5">
         <Button
           type="button"
           ghost
           size="icon"
           onClick={handleBack}
           aria-label={t.chatSession.backToNav}
-          className="shrink-0 text-text-secondary hover:text-midground"
+          className="-ml-2 shrink-0 text-text-secondary hover:text-midground"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </Button>
 
-        <span className="min-w-0 flex-1 truncate px-1 font-mondwest text-display text-sm uppercase tracking-[0.12em] text-midground">
+        <Terminal className="h-3.5 w-3.5 shrink-0 text-midground" aria-hidden />
+
+        <span className="min-w-0 flex-1 truncate font-mondwest text-display uppercase text-sm tracking-[0.12em] text-midground">
           {chatLabel}
         </span>
 
-        <Button
-          type="button"
-          ghost
-          size="icon"
-          onClick={() => session.openSessionPalette?.()}
-          aria-label={t.chatSession.searchSessions}
-          title={`${t.chatSession.searchSessions} (⌘K)`}
-          className="shrink-0 text-text-secondary hover:text-midground"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+        <div className="-mr-2 flex shrink-0 items-center">
+          <Button
+            type="button"
+            ghost
+            size="icon"
+            onClick={() => session.openSessionPalette?.()}
+            aria-label={t.chatSession.searchSessions}
+            title={`${t.chatSession.searchSessions} (⌘K)`}
+            className="text-text-secondary hover:text-midground"
+          >
+            <Search className="h-3.5 w-3.5" />
+          </Button>
 
-        <Button
-          type="button"
-          ghost
-          size="icon"
-          onClick={() => {
-            session.startNewChat();
-            handleBack();
-          }}
-          aria-label={t.chatSession.newChat}
-          className="shrink-0 text-text-secondary hover:text-midground"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+          <Button
+            type="button"
+            ghost
+            size="icon"
+            onClick={() => {
+              session.startNewChat();
+              handleBack();
+            }}
+            aria-label={t.chatSession.newChat}
+            className="text-text-secondary hover:text-midground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
       <SessionListPanel

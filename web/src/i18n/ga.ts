@@ -176,7 +176,7 @@ export const ga: Translations = {
     renameSession: "Athainmnigh an seisiún",
     deleteSession: "Scrios an seisiún",
     untitledSession: "Seisiún gan teideal",
-    liveSessions: "Beo",
+    openSessions: "Oscailte",
     recentSessions: "Le déanaí",
     noSessions: "Gan seisiúin go fóill",
     noMatch: "Níl aon seisiúin comhoiriúnacha",

@@ -174,7 +174,7 @@ export const zh: Translations = {
     renameSession: "重命名会话",
     deleteSession: "删除会话",
     untitledSession: "无标题会话",
-    liveSessions: "在线",
+    openSessions: "已打开",
     recentSessions: "最近",
     noSessions: "暂无会话",
     noMatch: "没有匹配的会话",

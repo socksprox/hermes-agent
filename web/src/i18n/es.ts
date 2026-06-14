@@ -176,7 +176,7 @@ export const es: Translations = {
     renameSession: "Renombrar sesión",
     deleteSession: "Eliminar sesión",
     untitledSession: "Sesión sin título",
-    liveSessions: "En vivo",
+    openSessions: "Abierto",
     recentSessions: "Recientes",
     noSessions: "Aún no hay sesiones",
     noMatch: "No hay sesiones coincidentes",

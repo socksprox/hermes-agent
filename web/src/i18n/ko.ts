@@ -176,7 +176,7 @@ export const ko: Translations = {
     renameSession: "세션 이름 변경",
     deleteSession: "세션 삭제",
     untitledSession: "제목 없는 세션",
-    liveSessions: "라이브",
+    openSessions: "열림",
     recentSessions: "최근",
     noSessions: "아직 세션이 없습니다",
     noMatch: "일치하는 세션이 없습니다",

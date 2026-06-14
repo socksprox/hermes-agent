@@ -176,7 +176,7 @@ export const tr: Translations = {
     renameSession: "Oturumu yeniden adlandır",
     deleteSession: "Oturumu sil",
     untitledSession: "Başlıksız oturum",
-    liveSessions: "Canlı",
+    openSessions: "Açık",
     recentSessions: "Son",
     noSessions: "Henüz oturum yok",
     noMatch: "Eşleşen oturum yok",

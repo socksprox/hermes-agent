@@ -183,7 +183,7 @@ export const en: Translations = {
     renameSession: "Rename session",
     deleteSession: "Delete session",
     untitledSession: "Untitled session",
-    liveSessions: "Live",
+    openSessions: "Open",
     recentSessions: "Recent",
     noSessions: "No sessions yet",
     noMatch: "No matching sessions",
