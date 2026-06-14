@@ -82,10 +82,7 @@ export function ChatSidebarSessionsView({
             type="button"
             ghost
             size="icon"
-            onClick={() => {
-              session.startNewChat();
-              handleBack();
-            }}
+            onClick={() => session.startNewChat()}
             aria-label={t.chatSession.newChat}
             className="text-text-secondary hover:text-midground"
           >
