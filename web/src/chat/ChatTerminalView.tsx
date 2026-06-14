@@ -42,6 +42,7 @@ function buildWsUrl(
   resume: string | null,
   channel: string,
   profile: string,
+  resumeExact: boolean,
 ): string {
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   // ``authParam`` is ``["token", <session>]`` in loopback mode and
@@ -49,6 +50,7 @@ function buildWsUrl(
   // ``_ws_auth_ok`` picks whichever shape matches the current gate state.
   const qs = new URLSearchParams({ [authParam[0]]: authParam[1], channel });
   if (resume) qs.set("resume", resume);
+  if (resumeExact) qs.set("resume_exact", "1");
   // Profile-scoped chat: the PTY child gets HERMES_HOME pointed at the
   // selected profile, so the conversation runs with that profile's model,
   // skills, memory, and sessions (see web_server._resolve_chat_argv).
@@ -178,10 +180,11 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
   const {
     targetId: resumeTarget,
     ready: resumeReady,
+    resumeExact,
   } = useResolvedResumeParam(scopedProfile);
   const channel = useMemo(
     () => generateChannelId(),
-    [resumeTarget, scopedProfile],
+    [resumeTarget, scopedProfile, resumeExact],
   );
 
   useEffect(() => {
@@ -529,7 +532,13 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
     void (async () => {
       const authParam = await buildWsAuthParam();
       if (unmounting) return;
-      const url = buildWsUrl(authParam, resumeTarget, channel, scopedProfile);
+      const url = buildWsUrl(
+        authParam,
+        resumeTarget,
+        channel,
+        scopedProfile,
+        resumeExact,
+      );
       const ws = new WebSocket(url);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
@@ -667,7 +676,7 @@ export function ChatTerminalView({ isActive = true }: { isActive?: boolean }) {
         copyResetRef.current = null;
       }
     };
-  }, [channel, resumeTarget, scopedProfile, resumeReady]);
+  }, [channel, resumeTarget, scopedProfile, resumeReady, resumeExact]);
 
   // When the user returns to the chat tab (isActive: false → true), the
   // terminal host just transitioned from display:none to display:flex.

@@ -39,11 +39,42 @@ export function withoutSessionsSidebarParam(
   return next;
 }
 
-/** Drop chat-session query state when starting a blank chat. */
+/** Drop all chat URL state (resume + drilled sidebar). */
 export function clearChatSessionQueryParams(
   params: URLSearchParams,
 ): URLSearchParams {
-  const next = withoutSessionsSidebarParam(params);
+  return stripResumeParam(withoutSessionsSidebarParam(params));
+}
+
+/** Remove `?resume=` and `?resume_exact=` from the URL. */
+export function stripResumeParam(params: URLSearchParams): URLSearchParams {
+  const next = new URLSearchParams(params);
   next.delete("resume");
+  next.delete(RESUME_EXACT_PARAM);
+  return next;
+}
+
+/** User picked a specific stored session — resume that id exactly. */
+export const RESUME_EXACT_PARAM = "resume_exact";
+
+export function hasResumeExactParam(search: string): boolean {
+  const value = new URLSearchParams(search).get(RESUME_EXACT_PARAM);
+  if (value === null) return false;
+  const trimmed = value.trim().toLowerCase();
+  return trimmed === "" || trimmed === "1" || trimmed === "true";
+}
+
+export function withResumeSession(
+  params: URLSearchParams,
+  storedId: string,
+  opts?: { exact?: boolean },
+): URLSearchParams {
+  const next = new URLSearchParams(params);
+  next.set("resume", storedId);
+  if (opts?.exact !== false) {
+    next.set(RESUME_EXACT_PARAM, "1");
+  } else {
+    next.delete(RESUME_EXACT_PARAM);
+  }
   return next;
 }

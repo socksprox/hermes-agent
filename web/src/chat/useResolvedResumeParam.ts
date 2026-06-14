@@ -1,28 +1,32 @@
 import { api } from "@/lib/api";
+import { hasResumeExactParam, stripResumeParam } from "@/lib/chatResumeUrl";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 export interface ResolvedResumeParam {
   /** Raw `?resume=` from the URL. */
   resumeParam: string | null;
-  /** Session id to bind after latest-descendant resolution. */
+  /** Validated session id to bind (exact — never rewritten to a branch child). */
   targetId: string | null;
-  /** False while resolving a non-empty resume param. */
+  /** False while validating a non-empty resume param. */
   ready: boolean;
+  /** True when `?resume_exact=` requests an exact stored-session resume. */
+  resumeExact: boolean;
 }
 
 /**
- * Resolve `?resume=` to the latest session descendant before binding chat.
+ * Validate `?resume=` exists in the session store before bind / PTY spawn.
  *
- * Dashboard chat (rich gateway + embedded PTY) must not connect until this
- * finishes — otherwise a reload can briefly bind the parent id, then rebind
- * when the URL updates, leaving an inconsistent session or a blank chat.
+ * Uses the exact id from the URL. Descendant resolution is intentionally
+ * omitted — sidebar picks and deep-links must open the session the user chose,
+ * not the newest child branch.
  */
 export function useResolvedResumeParam(profile: string): ResolvedResumeParam {
   const [searchParams, setSearchParams] = useSearchParams();
   const resumeParam = searchParams.get("resume")?.trim() || null;
+  const resumeExact = hasResumeExactParam(searchParams.toString());
 
-  const [targetId, setTargetId] = useState<string | null>(resumeParam);
+  const [targetId, setTargetId] = useState<string | null>(null);
   const [ready, setReady] = useState(!resumeParam);
 
   useEffect(() => {
@@ -36,27 +40,15 @@ export function useResolvedResumeParam(profile: string): ResolvedResumeParam {
     setReady(false);
 
     api
-      .getSessionLatestDescendant(resumeParam, profile)
-      .then((res) => {
+      .getSessionMessages(resumeParam, profile)
+      .then(() => {
         if (cancelled) return;
-        const resolved =
-          res.session_id && res.session_id !== resumeParam
-            ? res.session_id
-            : resumeParam;
-        setTargetId(resolved);
-        if (resolved !== resumeParam) {
-          setSearchParams(
-            (prev) => {
-              const next = new URLSearchParams(prev);
-              next.set("resume", resolved);
-              return next;
-            },
-            { replace: true },
-          );
-        }
+        setTargetId(resumeParam);
       })
       .catch(() => {
-        if (!cancelled) setTargetId(resumeParam);
+        if (cancelled) return;
+        setSearchParams((prev) => stripResumeParam(prev), { replace: true });
+        setTargetId(null);
       })
       .finally(() => {
         if (!cancelled) setReady(true);
@@ -69,7 +61,8 @@ export function useResolvedResumeParam(profile: string): ResolvedResumeParam {
 
   return {
     resumeParam,
-    targetId: resumeParam ? targetId : null,
+    targetId: resumeParam && targetId ? targetId : null,
     ready,
+    resumeExact,
   };
 }

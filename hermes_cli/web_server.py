@@ -10339,6 +10339,7 @@ def _resolve_chat_argv(
     resume: Optional[str] = None,
     sidecar_url: Optional[str] = None,
     profile: Optional[str] = None,
+    resume_exact: bool = False,
 ) -> tuple[list[str], Optional[str], Optional[dict]]:
     """Resolve the argv + cwd + env for the chat PTY.
 
@@ -10396,10 +10397,11 @@ def _resolve_chat_argv(
     if profile_dir is not None:
         env["HERMES_HOME"] = str(profile_dir)
 
-    if resume:
+    if resume and not resume_exact:
         latest_resume, _latest_path = _session_latest_descendant(resume)
         if latest_resume:
             resume = latest_resume
+    if resume:
         env["HERMES_TUI_RESUME"] = resume
 
     if sidecar_url:
@@ -10575,12 +10577,20 @@ async def pty_ws(ws: WebSocket) -> None:
     # --- spawn PTY ------------------------------------------------------
     resume = ws.query_params.get("resume") or None
     profile = ws.query_params.get("profile") or None
+    resume_exact = (ws.query_params.get("resume_exact") or "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     channel = _channel_or_close_code(ws)
     sidecar_url = _build_sidecar_url(channel) if channel else None
 
     try:
         argv, cwd, env = _resolve_chat_argv(
-            resume=resume, sidecar_url=sidecar_url, profile=profile
+            resume=resume,
+            sidecar_url=sidecar_url,
+            profile=profile,
+            resume_exact=resume_exact,
         )
     except HTTPException as exc:
         # Unknown/invalid profile from _resolve_profile_dir.

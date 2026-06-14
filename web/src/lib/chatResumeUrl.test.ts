@@ -4,9 +4,13 @@ import {
   CHAT_SESSIONS_SIDEBAR_PARAM,
   clearChatSessionQueryParams,
   getResumeParamFromSearch,
+  hasResumeExactParam,
   hasSessionsSidebarParam,
   isChatRoutePath,
+  RESUME_EXACT_PARAM,
   shouldDrillChatSidebar,
+  stripResumeParam,
+  withResumeSession,
   withSessionsSidebarParam,
   withoutSessionsSidebarParam,
 } from "./chatResumeUrl";
@@ -65,5 +69,21 @@ describe("chatResumeUrl", () => {
     expect(cleared.has("resume")).toBe(false);
     expect(cleared.has(CHAT_SESSIONS_SIDEBAR_PARAM)).toBe(false);
     expect(cleared.get("profile")).toBe("dev");
+  });
+
+  it("strips only resume param", () => {
+    const base = new URLSearchParams("?resume=abc&sessions=1&profile=dev");
+    const stripped = stripResumeParam(base);
+    expect(stripped.has("resume")).toBe(false);
+    expect(stripped.has(RESUME_EXACT_PARAM)).toBe(false);
+    expect(stripped.get("sessions")).toBe("1");
+    expect(stripped.get("profile")).toBe("dev");
+  });
+
+  it("sets exact resume for sidebar picks", () => {
+    const next = withResumeSession(new URLSearchParams("?sessions=1"), "abc");
+    expect(next.get("resume")).toBe("abc");
+    expect(hasResumeExactParam(next.toString())).toBe(true);
+    expect(next.get("sessions")).toBe("1");
   });
 });
