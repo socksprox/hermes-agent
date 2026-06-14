@@ -1,7 +1,7 @@
 import { Button } from "@nous-research/ui/ui/components/button";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, Plus, Search, Terminal } from "lucide-react";
+import { ChevronLeft, Plus, Search } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 
@@ -60,8 +60,6 @@ export function ChatSidebarSessionsView({
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </Button>
-
-        <Terminal className="h-3.5 w-3.5 shrink-0 text-midground" aria-hidden />
 
         <span className="min-w-0 flex-1 truncate font-mondwest text-display uppercase text-sm tracking-[0.12em] text-midground">
           {chatLabel}
