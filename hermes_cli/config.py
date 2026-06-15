@@ -1993,7 +1993,7 @@ DEFAULT_CONFIG = {
         "channel_prompts": {},         # Per-chat/topic ephemeral system prompts (topics inherit from parent group)
         "allowed_chats": "",           # If set, bot ONLY responds in these group/supergroup chat IDs (whitelist)
         "extra": {
-            "rich_messages": True,      # Bot API 10.1 rich messages; set false to force legacy MarkdownV2
+            "rich_messages": False,     # Opt in to Bot API 10.1 rich messages; default uses legacy MarkdownV2
         },
     },
 
@@ -2330,7 +2330,7 @@ DEFAULT_CONFIG = {
         # delivered as a fresh message if the preview has been visible at
         # least this many seconds, so the platform timestamp reflects
         # completion time. Telegram only; other platforms ignore it.
-        "fresh_final_after_seconds": 60.0,
+        "fresh_final_after_seconds": 0.0,
     },
 
     # Session storage — controls automatic cleanup of ~/.hermes/state.db.
@@ -4124,7 +4124,7 @@ _KNOWN_ROOT_KEYS = {
     "fallback_providers", "credential_pool_strategies", "toolsets",
     "agent", "terminal", "display", "compression", "delegation",
     "auxiliary", "custom_providers", "context", "memory", "gateway",
-    "sessions", "streaming", "updates",
+    "sessions", "streaming", "updates", "mcp_servers",
 }
 
 # Valid fields inside a custom_providers list entry
@@ -4858,6 +4858,38 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                     "  ✓ Seeded display.dashboard_chat_surface=terminal "
                     "(switch to rich in Config → Display)"
                 )
+
+    # ── Post-migration: disable exfiltration-shaped MCP stdio entries ──
+    # Users can hand-edit mcp_servers, and older installs may already contain a
+    # malicious entry. Preserve the stanza for auditability but mark it
+    # disabled so the next startup will not spawn it. (#45620)
+    config = read_raw_config()
+    raw_mcp_servers = config.get("mcp_servers")
+    if isinstance(raw_mcp_servers, dict):
+        try:
+            from hermes_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+        except Exception:
+            _validate_mcp_server_entry = None
+        if _validate_mcp_server_entry:
+            mcp_touched = False
+            for server_name, entry in raw_mcp_servers.items():
+                if not isinstance(entry, dict):
+                    continue
+                issues = _validate_mcp_server_entry(server_name, entry)
+                if not issues:
+                    continue
+                entry["enabled"] = False
+                mcp_touched = True
+                results["warnings"].append(
+                    f"Disabled suspicious MCP server '{server_name}'"
+                )
+                if not quiet:
+                    for issue in issues:
+                        print(f"  ⚠ {issue}")
+                    print(f"  ⚠ Disabled MCP server '{server_name}' pending review")
+            if mcp_touched:
+                config["mcp_servers"] = raw_mcp_servers
+                save_config(config)
 
     if current_ver < latest_ver and not quiet:
         print(f"Config version: {current_ver} → {latest_ver}")

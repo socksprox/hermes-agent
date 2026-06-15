@@ -8,11 +8,13 @@ from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 import pytest
+import yaml
 
 from hermes_cli.config import (
     reload_env,
     redact_key,
     OPTIONAL_ENV_VARS,
+    DEFAULT_CONFIG,
 )
 
 
@@ -1386,6 +1388,28 @@ class TestWebServerEndpoints:
         assert telegram["enabled"] is False
         assert any(field["key"] == "TELEGRAM_BOT_TOKEN" and field["required"] for field in telegram["env_vars"])
 
+    def test_weixin_messaging_metadata_describes_personal_ilink_setup(self):
+        resp = self.client.get("/api/messaging/platforms")
+
+        assert resp.status_code == 200
+        weixin = next(
+            platform
+            for platform in resp.json()["platforms"]
+            if platform["id"] == "weixin"
+        )
+        assert weixin["name"] == "Weixin / WeChat (Personal)"
+        assert "personal WeChat" in weixin["description"]
+        assert "Official Account" not in f"{weixin['name']} {weixin['description']}"
+        assert weixin["docs_url"] == (
+            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/"
+        )
+
+        fields = {field["key"]: field for field in weixin["env_vars"]}
+        for key in ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL"):
+            assert "iLink" in fields[key]["description"]
+            assert "QR login" in fields[key]["description"]
+            assert "Official Account" not in fields[key]["description"]
+
     def test_messaging_catalog_covers_gateway_platforms(self):
         """Catalog is derived from the Platform enum, so every built-in shows up."""
         from gateway.config import Platform
@@ -2686,6 +2710,10 @@ class TestNewEndpoints:
         import hermes_cli.profiles as profiles_mod
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
+        (get_hermes_home() / "config.yaml").write_text(
+            "model:\n  provider: openrouter\n",
+            encoding="utf-8",
+        )
         default_skill = get_hermes_home() / "skills" / "custom" / "new-skill"
         default_skill.mkdir(parents=True)
         (default_skill / "SKILL.md").write_text("---\nname: new-skill\n---\n", encoding="utf-8")
@@ -2696,8 +2724,11 @@ class TestNewEndpoints:
         )
 
         assert resp.status_code == 200
-        cloned_skill = get_hermes_home() / "profiles" / "cloned" / "skills" / "custom" / "new-skill" / "SKILL.md"
+        cloned_root = get_hermes_home() / "profiles" / "cloned"
+        cloned_skill = cloned_root / "skills" / "custom" / "new-skill" / "SKILL.md"
         assert cloned_skill.exists()
+        cloned_config = yaml.safe_load((cloned_root / "config.yaml").read_text(encoding="utf-8"))
+        assert cloned_config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         profiles = {p["name"]: p for p in self.client.get("/api/profiles").json()["profiles"]}
         assert profiles["cloned"]["skill_count"] == 1
 
