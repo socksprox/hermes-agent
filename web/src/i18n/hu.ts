@@ -159,6 +159,7 @@ export const hu: Translations = {
     selectedSessionsDeleted: "{count} munkamenet törölve",
     failedToDeleteSelected: "Nem sikerült törölni a kijelölt munkameneteket",
     resumeInChat: "Folytatás a csevegésben",
+    newChat: "Új csevegés",
     previousPage: "Előző oldal",
     nextPage: "Következő oldal",
     roles: {
